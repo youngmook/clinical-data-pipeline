@@ -10,11 +10,11 @@ This repository provides a research-grade data pipeline that:
 - Links compounds to trials using normalized identifiers and synonyms
 - Exports analysis-ready datasets (CSV / Parquet)
 
-This repository is intended as a **foundational asset** within magicai-labs.
-
-## Division Alignment
-- Manifestation Magic: data pipelines, system realization
-- Elemental Magic: chemistry & life-science domain
+This repository serves as a **foundational data integration pipeline**
+within the magicai-labs ecosystem.
 
 ## Status
 🚧 Initial development (MVP pipeline in progress)
+
+## License
+MIT License
