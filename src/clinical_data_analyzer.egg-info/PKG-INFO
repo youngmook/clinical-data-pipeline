@@ -3,3 +3,5 @@ Name: clinical-data-analyzer
 Version: 0.1.0
 Summary: Clinical data pipeline integrating PubChem and ClinicalTrials.gov
 Requires-Python: >=3.9
+License-File: LICENSE
+Dynamic: license-file
