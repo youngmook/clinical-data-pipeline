@@ -53,6 +53,7 @@ Thumbs.db
 data/
 cache/
 out/
+out_hnid/
 *.parquet
 *.feather
 *.csv
