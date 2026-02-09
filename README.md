@@ -369,6 +369,29 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
   --progress-every 1
 ```
 
+## Scheduled Automation (GitHub Actions)
+
+The repository includes a scheduled workflow:
+
+- `.github/workflows/ctgov_collect.yml`
+
+What it does on each run:
+
+1. collect/refresh CTGov docs (`collect_ctgov_docs.py --resume`)
+2. build normalized dataset (`build_clinical_dataset.py`)
+3. build static table page (`build_studies_table.py`)
+4. update persistent data snapshots in repo:
+   - `data/ctgov/studies.jsonl` (latest)
+   - `data/ctgov/history/studies_*.jsonl` (history, only when changed)
+   - `data/ctgov/collection_state.json` (last collected/changed metadata)
+5. deploy table page from `docs/data` to GitHub Pages
+
+Manual run (Actions UI) supports optional:
+
+- `hnid`
+- `limit_cids`
+- `limit_ncts`
+
 ### Download clinical-trial–related CIDs (HNID)
 
 Download PubChem compound IDs associated with the *Clinical Trials* classification node:
