@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Young-Mook Kang, Magic AI Research Association
+
 from clinical_data_analyzer.pipeline.cid_to_nct import cid_to_nct_ids
 
 def test_cid_to_nct_smoke():

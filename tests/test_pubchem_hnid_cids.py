@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Young-Mook Kang, Magic AI Research Association
+
 from clinical_data_analyzer.pubchem import PubChemClassificationClient
 
 def test_hnid_to_cids_smoke():

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Young-Mook Kang, Magic AI Research Association
+
 from clinical_data_analyzer.ctgov import CTGovClient
 from clinical_data_analyzer.pubchem.client import PubChemClient
 from clinical_data_analyzer.pipeline.build_dataset import DatasetBuildConfig, build_dataset_for_cids

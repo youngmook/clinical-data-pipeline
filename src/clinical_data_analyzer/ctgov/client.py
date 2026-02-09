@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Young-Mook Kang, Magic AI Research Association
+
 from __future__ import annotations
 
 from dataclasses import dataclass
