@@ -100,6 +100,27 @@
 - 원본 CTGov study 객체
 - 조인 편의를 위한 최상위 `cid` 필드
 
+## 정규화 임상 데이터셋 컬럼
+
+`scripts/build_clinical_dataset.py`로 생성되는
+`clinical_compound_trials.jsonl/csv`의 주요 컬럼:
+
+- `cid`
+- `nct_id`
+- `compound_name`
+- `title`
+- `phase`
+- `overall_status`
+- `conditions`
+- `interventions`
+- `targets`
+- `start_date`
+- `completion_date`
+- `last_update_date`
+- `ctgov_url` (ClinicalTrials.gov study 링크)
+- `pubchem_url` (PubChem compound 링크)
+- `source_url` (`ctgov_url`의 하위호환 별칭)
+
 ## 예시
 
 ```python

@@ -100,6 +100,27 @@ For step1-3 collection via `collect_ctgov_docs`, `studies.jsonl` includes:
 - original CTGov study object
 - top-level `cid` field for join convenience
 
+## Normalized clinical dataset columns
+
+When using `scripts/build_clinical_dataset.py`, the output
+`clinical_compound_trials.jsonl/csv` includes:
+
+- `cid`
+- `nct_id`
+- `compound_name`
+- `title`
+- `phase`
+- `overall_status`
+- `conditions`
+- `interventions`
+- `targets`
+- `start_date`
+- `completion_date`
+- `last_update_date`
+- `ctgov_url` (ClinicalTrials.gov study URL)
+- `pubchem_url` (PubChem compound URL)
+- `source_url` (backward-compatible alias of `ctgov_url`)
+
 ## Example
 
 ```python

@@ -83,7 +83,7 @@ def _write_html(path: Path, title: str) -> None:
               <th>Interventions</th>
               <th>Targets</th>
               <th>Last Update</th>
-              <th>Source</th>
+              <th>Links</th>
             </tr>
           </thead>
           <tbody id=\"tbody\"></tbody>
@@ -109,7 +109,11 @@ def _write_html(path: Path, title: str) -> None:
           <td>${{escapeHtml(r.interventions)}}</td>
           <td>${{escapeHtml(r.targets)}}</td>
           <td>${{escapeHtml(r.last_update_date)}}</td>
-          <td><a href="${{escapeHtml(r.source_url)}}" target="_blank" rel="noreferrer">link</a></td>
+          <td>
+            <a href="${{escapeHtml(r.ctgov_url || r.source_url)}}" target="_blank" rel="noreferrer">ctgov</a>
+            |
+            <a href="${{escapeHtml(r.pubchem_url || ('https://pubchem.ncbi.nlm.nih.gov/compound/' + r.cid))}}" target="_blank" rel="noreferrer">pubchem</a>
+          </td>
         </tr>
       `).join('');
       count.textContent = `${{rows.length}} rows`;

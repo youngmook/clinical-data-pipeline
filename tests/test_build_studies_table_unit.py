@@ -32,6 +32,8 @@ def test_build_studies_table_unit(tmp_path: Path):
                 "start_date",
                 "completion_date",
                 "last_update_date",
+                "ctgov_url",
+                "pubchem_url",
                 "source_url",
             ]
         )
@@ -49,6 +51,8 @@ def test_build_studies_table_unit(tmp_path: Path):
                 "2010-01-01",
                 "2011-01-01",
                 "2012-01-01",
+                "https://clinicaltrials.gov/study/NCT00000001",
+                "https://pubchem.ncbi.nlm.nih.gov/compound/2244",
                 "https://clinicaltrials.gov/study/NCT00000001",
             ]
         )
@@ -84,3 +88,4 @@ def test_build_studies_table_unit(tmp_path: Path):
     html = out_html.read_text(encoding="utf-8")
     assert "Unit Test Table" in html
     assert "studies.json" in html
+    assert "pubchem" in html
