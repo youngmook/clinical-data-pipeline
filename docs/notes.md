@@ -1,53 +1,86 @@
-# Notes
+# Notes (Handover for Next Codex)
 
-This file summarizes recent work and decisions for the clinical-data-pipeline project.
+This file is a practical handover for continuing work quickly.
 
-## Summary of Changes
+## Current Direction
 
-- Added a comprehensive CT.gov v2 client with support for fields, query dicts, filters, sorting, paging, rate-limit handling, and compact extraction helpers.
-- Expanded CLI to support:
-  - `hnid-cids` (HNID -> CID list)
-  - `collect-ctgov` (HNID -> CID -> NCT -> CT.gov documents)
-  - legacy single-compound flow remains supported.
-- Added scripts for end-to-end table generation from HNID:
-  - `scripts/build_ctgov_table.py` produces `cid_nct_links.jsonl`, `studies.jsonl`, and `ctgov_table.csv`.
-- Added documentation in `docs/` and Korean translations (`*.ko.md`).
-- Added smoke and unit tests for the new script, plus doc-backed example tests.
-- Registered pytest markers in `pyproject.toml`.
-- Standardized imports to use `clinical_data_analyzer.ctgov` and `clinical_data_analyzer.pubchem` public entry points to avoid future breakage when files are reorganized.
-- Added CID -> NCT fallback chain improvements:
-  - PUG-View heading lookup
-  - PubChem web clinicaltrials endpoint fallback (`/sdq/sphinxql.cgi`)
-  - HTML fallback
-  - optional CT.gov term-link fallback
-- Added CID-level non-fail-fast behavior and error recording in outputs.
-- Added staged MVP scripts:
-  - `scripts/fetch_cids.py`
-  - `scripts/map_cid_to_nct.py`
-  - `scripts/fetch_ctgov_docs.py`
-  - `scripts/build_clinical_dataset.py`
-  - `scripts/run_mvp_pipeline.py`
+- Keep **service-first architecture** for pipeline orchestration.
+- Keep PubChem / CTGov clients independent.
+- Use script files as thin wrappers (argument parsing + logging).
 
-## Key Decisions
+## What Was Completed
 
-- Use stable public imports (e.g., `from clinical_data_analyzer.ctgov import CTGovClient`) instead of file-level imports.
-- Keep `client.py` un-split for now; if growth occurs, split internally while preserving public re-exports.
-- Ignore outputs in `out_*/` via `.gitignore` to avoid committing large datasets.
+1. CID -> NCT fallback chain was strengthened:
+   - PUG-View default
+   - PUG-View heading lookup
+   - PubChem web clinicaltrials endpoint (`/sdq/sphinxql.cgi`)
+   - PubChem HTML fallback
+   - optional CTGov term-link fallback
+2. CID-level error handling improved:
+   - non-fail-fast mode supported
+   - error details written into output rows
+3. `studies.jsonl` now includes top-level `cid` in step1-3 collector output.
+4. Step1-3 collector moved toward service pattern:
+   - `src/clinical_data_analyzer/pipeline/collect_ctgov_docs_service.py`
+   - wrappers:
+     - `scripts/collect_ctgov_docs.py`
+     - `scripts/collect_ctgov_docs_first1.py`
+5. Streaming collection behavior implemented for better visibility:
+   - CID-by-CID mapping and immediate CTGov fetch per CID.
 
-## Current Behavior Observations
+## Key Files to Read First
 
-- Some CIDs can still fail in restricted environments due to DNS/network limits.
-- With non-fail-fast mode, processing continues and records per-CID errors in output files.
+- `src/clinical_data_analyzer/pipeline/collect_ctgov_docs_service.py`
+- `src/clinical_data_analyzer/pipeline/cid_to_nct.py`
+- `src/clinical_data_analyzer/pubchem/pug_view.py`
+- `src/clinical_data_analyzer/pubchem/web_fallback.py`
+- `scripts/collect_ctgov_docs.py`
 
-## How to Reproduce Recent Tests
+## Output Contract (Step1-3 Collector)
 
-- Smoke test (network):
-  - `pytest -q -m "smoke and network"`
-- Unit test (no network):
-  - `pytest -q tests/test_build_ctgov_table_unit.py`
+Output folder:
+- `out/<folder-name>/`
 
-## Suggested Next Steps
+Files:
+- `cids.txt`
+- `cids.jsonl`
+- `cid_nct_links.jsonl`
+- `cid_nct_map.csv`
+- `compounds.jsonl`
+- `studies.jsonl` (with top-level `cid`)
 
-- Add optional quality controls for fallback outputs (e.g., source-level confidence tagging).
-- Consider checkpointing and batching options for full HNID runs.
-- Add Korean docs updates for the latest fallback and script workflow changes.
+## Known Environment Issue
+
+- In restricted environments, PubChem host resolution may fail:
+  - `Failed to resolve 'pubchem.ncbi.nlm.nih.gov'`
+- This is a DNS/network issue, not a parser-only issue.
+
+## Recommended Run Commands
+
+Main step1-3 run:
+
+```bash
+PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgov_docs.py \
+  --hnid 3647573 \
+  --folder-name ctgov_docs_run1 \
+  --out-root out \
+  --use-ctgov-fallback \
+  --resume \
+  --show-progress \
+  --progress-every 1
+```
+
+Quick smoke:
+
+```bash
+PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgov_docs_first1.py \
+  --folder-name ctgov_docs_first1 \
+  --out-root out \
+  --use-ctgov-fallback
+```
+
+## Next Practical Improvements
+
+1. Align Korean docs (`README.ko.md`, `docs/*.ko.md`) with the latest streaming/service changes.
+2. Add tests for `collect_ctgov_docs_service.py` (service-level unit tests with stubs/mocks).
+3. Optionally add configurable fixed interval (`sleep`) between API calls when users request throttling.

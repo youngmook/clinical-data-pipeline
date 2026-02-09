@@ -68,3 +68,32 @@ One-shot:
 ```bash
 python scripts/run_mvp_pipeline.py --hnid 3647573 --out-dir out_mvp --use-ctgov-fallback --resume
 ```
+
+### Step1-3 streaming collector (recommended for CTGov docs)
+
+This runner focuses on:
+1. HNID -> CID
+2. CID -> NCT
+3. NCT -> CTGov study docs
+
+and processes CID records in streaming order so progress appears continuously.
+
+```bash
+PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgov_docs.py \
+  --hnid 3647573 \
+  --folder-name ctgov_docs_run1 \
+  --out-root out \
+  --use-ctgov-fallback \
+  --resume \
+  --show-progress \
+  --progress-every 1
+```
+
+Quick smoke mode (first CID + first NCT):
+
+```bash
+PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgov_docs_first1.py \
+  --folder-name ctgov_docs_first1 \
+  --out-root out \
+  --use-ctgov-fallback
+```

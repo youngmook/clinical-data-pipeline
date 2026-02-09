@@ -4,6 +4,27 @@ All notable changes to this project are documented in this file.
 
 ## 2026-02-09
 
+### Added (Service Refactor)
+
+- Added service-oriented CTGov collection module:
+  - `src/clinical_data_analyzer/pipeline/collect_ctgov_docs_service.py`
+  - `CollectCtgovDocsConfig`
+  - `CollectCtgovDocsResult`
+  - `collect_ctgov_docs(...)`
+- Added thin script wrappers:
+  - `scripts/collect_ctgov_docs.py` (main step1-3 runner)
+  - `scripts/collect_ctgov_docs_first1.py` (quick smoke run: first 1 CID / first 1 NCT)
+
+### Changed (Collection Flow)
+
+- Refactored step1-3 collection to **streaming mode**:
+  - process one CID at a time
+  - map NCT IDs for that CID
+  - fetch CTGov study docs immediately (instead of waiting for all CID mapping to finish)
+- Updated collected `studies.jsonl` rows to include top-level `cid` for easier downstream joins.
+- Improved user-facing progress logs and startup context messages.
+- Improved failure messaging in script layer with human-readable reason + raw error.
+
 ### Added
 
 - Added staged MVP scripts under `scripts/`:
@@ -34,7 +55,7 @@ All notable changes to this project are documented in this file.
 
 ### Documentation
 
-- Updated usage and behavior docs for new fallback strategy and output schema details.
+- Updated usage and behavior docs for fallback strategy, streaming collection flow, and service-oriented structure.
 
 ### Tests
 
