@@ -128,6 +128,7 @@ def build_cid_nct_map(
     out_dir: Path,
     include_compound_props: bool = True,
     use_ctgov_fallback: bool = False,
+    progress_every: int = 0,
 ) -> Dict[str, Path]:
     cfg = CidToNctConfig(
         out_dir=str(out_dir),
@@ -135,7 +136,7 @@ def build_cid_nct_map(
         include_compound_props=include_compound_props,
         use_ctgov_fallback=use_ctgov_fallback,
     )
-    outputs = export_cids_nct_dataset(list(cids), config=cfg)
+    outputs = export_cids_nct_dataset(list(cids), config=cfg, progress_every=progress_every)
     links_path = outputs["cid_nct_links"]
 
     csv_path = out_dir / "cid_nct_map.csv"
@@ -184,6 +185,7 @@ def fetch_ctgov_studies(
     fields: Optional[Sequence[str]] = None,
     resume: bool = True,
     limit: Optional[int] = None,
+    progress_every: int = 0,
 ) -> Dict[str, int]:
     ctgov = CTGovClient()
     existing = load_nct_ids_from_studies(out_path) if resume else set()
@@ -192,10 +194,13 @@ def fetch_ctgov_studies(
         queued = queued[:limit]
 
     fetched = 0
-    for nct in queued:
+    total = len(queued)
+    for idx, nct in enumerate(queued, start=1):
         study = ctgov.get_study(nct, fields=list(fields) if fields else None)
         append_jsonl(out_path, [study])
         fetched += 1
+        if progress_every > 0 and (idx % progress_every == 0 or idx == total):
+            print(f"[ctgov-fetch] processed {idx}/{total} NCT IDs")
 
     return {"requested": len(queued), "fetched": fetched, "existing": len(existing)}
 
