@@ -3,6 +3,8 @@
 A research-grade pipeline for collecting, normalizing, and linking
 **clinical compound data from PubChem** with **clinical trial documents from ClinicalTrials.gov**.
 
+Korean README: README.ko.md
+
 This repository focuses on **reproducible, API-based data collection** without relying on
 web scraping or unstable UI-dependent mechanisms.
 
