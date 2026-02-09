@@ -60,6 +60,21 @@ Module: src/clinical_data_analyzer/pipeline/cid_to_nct.py
   - writes cid_nct_links.jsonl
   - optionally compounds.jsonl (basic properties)
 
+`CidToNctConfig` supports:
+
+- use_ctgov_fallback: enable CT.gov term-link fallback when no NCT IDs are found
+- fail_fast: raise immediately on CID errors (default: False)
+
+`cid_nct_links.jsonl` row fields:
+
+- cid
+- nct_ids
+- n_nct
+- source
+- error (optional, when CID-level retrieval fails)
+
+`compounds.jsonl` row fields include optional `error` when compound metadata retrieval fails.
+
 ## Example
 
 ```python

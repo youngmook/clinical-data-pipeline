@@ -15,6 +15,18 @@ This file summarizes recent work and decisions for the clinical-data-pipeline pr
 - Added smoke and unit tests for the new script, plus doc-backed example tests.
 - Registered pytest markers in `pyproject.toml`.
 - Standardized imports to use `clinical_data_analyzer.ctgov` and `clinical_data_analyzer.pubchem` public entry points to avoid future breakage when files are reorganized.
+- Added CID -> NCT fallback chain improvements:
+  - PUG-View heading lookup
+  - PubChem web clinicaltrials endpoint fallback (`/sdq/sphinxql.cgi`)
+  - HTML fallback
+  - optional CT.gov term-link fallback
+- Added CID-level non-fail-fast behavior and error recording in outputs.
+- Added staged MVP scripts:
+  - `scripts/fetch_cids.py`
+  - `scripts/map_cid_to_nct.py`
+  - `scripts/fetch_ctgov_docs.py`
+  - `scripts/build_clinical_dataset.py`
+  - `scripts/run_mvp_pipeline.py`
 
 ## Key Decisions
 
@@ -24,8 +36,8 @@ This file summarizes recent work and decisions for the clinical-data-pipeline pr
 
 ## Current Behavior Observations
 
-- Some CIDs (e.g., 379) show ClinicalTrials.gov sections in PUG-View but do not include NCT IDs in the JSON payload. The NCT list appears to be referenced via an external table (`ExternalTableName: clinicaltrials`).
-- NCT IDs can still be found for other CIDs (e.g., CID 441 in the 3647573 sample).
+- Some CIDs can still fail in restricted environments due to DNS/network limits.
+- With non-fail-fast mode, processing continues and records per-CID errors in output files.
 
 ## How to Reproduce Recent Tests
 
@@ -36,7 +48,6 @@ This file summarizes recent work and decisions for the clinical-data-pipeline pr
 
 ## Suggested Next Steps
 
-- Investigate how to resolve PUG-View `ExternalTableName=clinicaltrials` to actual NCT IDs.
-  - Check PubChem summary page network calls for the external table endpoint.
-- Consider adding checkpointing and batching options if running the full HNID dataset.
-- If needed, extend CT.gov fetching to include phase fields explicitly for faster table generation.
+- Add optional quality controls for fallback outputs (e.g., source-level confidence tagging).
+- Consider checkpointing and batching options for full HNID runs.
+- Add Korean docs updates for the latest fallback and script workflow changes.

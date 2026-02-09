@@ -5,8 +5,9 @@ A research-grade pipeline for collecting, normalizing, and linking
 
 Korean README: README.ko.md
 
-This repository focuses on **reproducible, API-based data collection** without relying on
-web scraping or unstable UI-dependent mechanisms.
+This repository focuses on **reproducible, API-based data collection**.
+It prioritizes official APIs and uses web-derived fallbacks only when PubChem REST payloads
+do not expose trial IDs for specific compounds.
 
 ---
 
@@ -28,6 +29,7 @@ This project provides a minimal but extensible pipeline to:
 3. **Link PubChem compounds to ClinicalTrials.gov**
 
    * Extracts **NCT IDs** from PubChem annotations (PUG-View)
+   * Uses fallback sources when needed (PUG-View heading lookup, PubChem web clinicaltrials endpoint, optional CT.gov term linking)
    * Retrieves full clinical trial documents via the **ClinicalTrials.gov v2 API**
 
 4. **Export analysis-ready datasets**
@@ -39,11 +41,12 @@ This project provides a minimal but extensible pipeline to:
 
 ## Key design principles
 
-* **Official APIs only**
+* **Official APIs first**
 
   * PubChem PUG REST (Classification Nodes, PUG-View)
   * ClinicalTrials.gov v2 API
-* **No Selenium, no UI scraping**
+  * PubChem web clinicaltrials endpoint fallback (`/sdq/sphinxql.cgi`) when REST payload is incomplete
+* **No Selenium/browser automation**
 * **Reproducible**
 
   * Classification nodes (HNID) are stable identifiers
@@ -163,6 +166,7 @@ src/clinical_data_analyzer/
 │  ├─ classification_nodes.py    # HNID → CID (Classification Nodes API)
 │  ├─ clinical_trials_nodes.py   # Clinical-trial–related HNID helpers
 │  └─ pug_view.py                # PUG-View: NCT ID extraction
+│  └─ web_fallback.py            # Web clinicaltrials endpoint/HTML fallback for NCT IDs
 │
 ├─ ctgov/
 │  └─ client.py                  # ClinicalTrials.gov v2 API
@@ -217,6 +221,23 @@ without writing Python code.
 
 ```bash
 clinical-data-analyzer --help
+```
+
+## Script usage (MVP)
+
+For staged execution:
+
+```bash
+python scripts/fetch_cids.py --hnid 3647573 --out-dir out_mvp
+python scripts/map_cid_to_nct.py --cids-file out_mvp/cids.txt --out-dir out_mvp --use-ctgov-fallback
+python scripts/fetch_ctgov_docs.py --links-file out_mvp/cid_nct_links.jsonl --out-path out_mvp/studies.jsonl --resume
+python scripts/build_clinical_dataset.py --links-file out_mvp/cid_nct_links.jsonl --studies-file out_mvp/studies.jsonl --out-dir out_mvp/final
+```
+
+One-shot:
+
+```bash
+python scripts/run_mvp_pipeline.py --hnid 3647573 --out-dir out_mvp --use-ctgov-fallback --resume
 ```
 
 ### Download clinical-trial–related CIDs (HNID)

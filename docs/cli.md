@@ -51,3 +51,20 @@ Optional fields for CT.gov:
 ```bash
 python -m clinical_data_analyzer.cli collect-ctgov --hnid 1856916 --ctgov-fields NCTId,BriefTitle
 ```
+
+## Script-based MVP flow
+
+Use staged scripts when you want explicit step-by-step control:
+
+```bash
+python scripts/fetch_cids.py --hnid 3647573 --out-dir out_mvp
+python scripts/map_cid_to_nct.py --cids-file out_mvp/cids.txt --out-dir out_mvp --use-ctgov-fallback
+python scripts/fetch_ctgov_docs.py --links-file out_mvp/cid_nct_links.jsonl --out-path out_mvp/studies.jsonl --resume
+python scripts/build_clinical_dataset.py --links-file out_mvp/cid_nct_links.jsonl --studies-file out_mvp/studies.jsonl --out-dir out_mvp/final
+```
+
+One-shot:
+
+```bash
+python scripts/run_mvp_pipeline.py --hnid 3647573 --out-dir out_mvp --use-ctgov-fallback --resume
+```
