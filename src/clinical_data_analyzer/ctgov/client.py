@@ -2,12 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, Iterator, Optional, Sequence, Union
+import json
+import time
 
 import requests
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
 class CTGovError(RuntimeError):
+    pass
+
+
+class CTGovRateLimitError(CTGovError):
     pass
 
 
@@ -56,17 +62,28 @@ class CTGovClient:
         reraise=True,
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=0.5, min=0.5, max=8),
-        retry=retry_if_exception_type((requests.RequestException,)),
+        retry=retry_if_exception_type((requests.RequestException, CTGovRateLimitError)),
     )
     def _get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         url = f"{self.base_url}{path}"
         with self._session() as s:
             r = s.get(url, params=params, timeout=self.timeout)
             try:
+                if r.status_code in (408, 429, 503, 504):
+                    retry_after = r.headers.get("Retry-After")
+                    if retry_after:
+                        try:
+                            time.sleep(float(retry_after))
+                        except ValueError:
+                            pass
+                    raise CTGovRateLimitError(f"HTTP {r.status_code} for {url}: {r.text[:500]}")
                 r.raise_for_status()
             except requests.HTTPError as e:
                 raise CTGovError(f"HTTP {r.status_code} for {url}: {r.text[:500]}") from e
-            return r.json()
+            try:
+                return r.json()
+            except json.JSONDecodeError as e:
+                raise CTGovError(f"Invalid JSON response for {url}: {r.text[:500]}") from e
 
     def search_studies(
         self,
