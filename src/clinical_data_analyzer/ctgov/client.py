@@ -17,6 +17,17 @@ class CTGovRateLimitError(CTGovError):
     pass
 
 
+CTGOV_QUERY_KEYS = {
+    "cond",
+    "intr",
+    "term",
+    "titles",
+    "locn",
+    "spons",
+    "lead",
+    "outc",
+    "id",
+}
 def _normalize_fields(fields: Optional[Union[str, Sequence[str]]]) -> Optional[str]:
     if not fields:
         return None
@@ -37,13 +48,24 @@ def _normalize_fields(fields: Optional[Union[str, Sequence[str]]]) -> Optional[s
     return ",".join(unique)
 
 
-def _merge_query(params: Dict[str, Any], query: Optional[Dict[str, str]]) -> None:
+def _merge_query(
+    params: Dict[str, Any],
+    query: Optional[Dict[str, str]],
+    *,
+    validate: bool = False,
+    allowed: Optional[set[str]] = None,
+) -> None:
     if not query:
         return
     for k, v in query.items():
         if not k or v is None:
             continue
         key = f"query.{k}" if not k.startswith("query.") else k
+        if validate:
+            base_key = key[len("query.") :] if key.startswith("query.") else key
+            allowed_keys = allowed or CTGOV_QUERY_KEYS
+            if base_key not in allowed_keys:
+                raise CTGovError(f"Invalid query key: {base_key}")
         if key not in params:
             params[key] = v
 @dataclass(frozen=True)
@@ -95,6 +117,8 @@ class CTGovClient:
         fmt: Optional[str] = None,
         fields: Optional[Union[str, Sequence[str]]] = None,
         query: Optional[Dict[str, str]] = None,
+        validate_query_keys: bool = False,
+        allowed_query_keys: Optional[Sequence[str]] = None,
         sort: Optional[str] = None,
         page_size: int = 50,
         page_token: Optional[str] = None,
@@ -112,7 +136,8 @@ class CTGovClient:
         if term:
             params["query.term"] = term
         if query:
-            _merge_query(params, query)
+            allowed = set(allowed_query_keys) if allowed_query_keys else None
+            _merge_query(params, query, validate=validate_query_keys, allowed=allowed)
         if sort:
             params["sort"] = sort
         if filter:
@@ -135,6 +160,8 @@ class CTGovClient:
         term: Optional[str] = None,
         fields: Optional[Union[str, Sequence[str]]] = None,
         query: Optional[Dict[str, str]] = None,
+        validate_query_keys: bool = False,
+        allowed_query_keys: Optional[Sequence[str]] = None,
         sort: Optional[str] = None,
         filter: Optional[str] = None,
         fmt: Optional[str] = None,
@@ -156,6 +183,8 @@ class CTGovClient:
                 term=term,
                 fields=fields,
                 query=query,
+                validate_query_keys=validate_query_keys,
+                allowed_query_keys=allowed_query_keys,
                 sort=sort,
                 filter=filter,
                 fmt=fmt,
