@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
-from clinical_data_analyzer.pubchem.classification_nodes import PubChemClassificationClient
+from clinical_data_analyzer.pubchem import PubChemClassificationClient
 
 
 # Provided HNIDs (hid=72)

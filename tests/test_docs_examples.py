@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import requests
 import pytest
 
-from clinical_data_analyzer.ctgov.client import (
+from clinical_data_analyzer.ctgov import (
     CTGOV_QUERY_KEYS,
     CTGovClient,
     CTGovError,
@@ -13,8 +13,8 @@ from clinical_data_analyzer.ctgov.client import (
     extract_study_compact,
 )
 from clinical_data_analyzer.pubchem.client import PubChemClient
-from clinical_data_analyzer.pubchem.classification_nodes import PubChemClassificationClient
-from clinical_data_analyzer.pubchem.pug_view import PubChemPugViewClient
+from clinical_data_analyzer.pubchem import PubChemClassificationClient
+from clinical_data_analyzer.pubchem import PubChemPugViewClient
 from clinical_data_analyzer.pipeline.build_dataset import build_dataset_for_cids
 
 

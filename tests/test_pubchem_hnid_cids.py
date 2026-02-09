@@ -1,4 +1,4 @@
-from clinical_data_analyzer.pubchem.classification_nodes import PubChemClassificationClient
+from clinical_data_analyzer.pubchem import PubChemClassificationClient
 
 def test_hnid_to_cids_smoke():
     hnid = 1856916  # Clinical Trials

@@ -8,10 +8,10 @@ import json
 from pathlib import Path
 from typing import Iterable, List, Optional
 
-from clinical_data_analyzer.ctgov.client import CTGovClient
+from clinical_data_analyzer.ctgov import CTGovClient
 from clinical_data_analyzer.pubchem.client import PubChemClient
-from clinical_data_analyzer.pubchem.classification_nodes import PubChemClassificationClient
-from clinical_data_analyzer.pubchem.pug_view import PubChemPugViewClient
+from clinical_data_analyzer.pubchem import PubChemClassificationClient
+from clinical_data_analyzer.pubchem import PubChemPugViewClient
 from clinical_data_analyzer.pipeline.build_dataset import DatasetBuildConfig, build_dataset_for_cids
 from clinical_data_analyzer.pipeline.cid_to_nct import CidToNctConfig, export_cids_nct_dataset
 

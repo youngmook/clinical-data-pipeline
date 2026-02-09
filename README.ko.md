@@ -108,7 +108,7 @@ from clinical_data_analyzer.pubchem import (
     PubChemClassificationClient,
     PubChemPugViewClient,
 )
-from clinical_data_analyzer.ctgov.client import CTGovClient
+from clinical_data_analyzer.ctgov import CTGovClient
 
 # Clinical Trials HNID
 HNID = 1856916

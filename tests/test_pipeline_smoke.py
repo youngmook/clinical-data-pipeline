@@ -1,4 +1,4 @@
-from clinical_data_analyzer.ctgov.client import CTGovClient
+from clinical_data_analyzer.ctgov import CTGovClient
 from clinical_data_analyzer.pubchem.client import PubChemClient
 from clinical_data_analyzer.pipeline.build_dataset import DatasetBuildConfig, build_dataset_for_cids
 
