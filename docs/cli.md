@@ -102,3 +102,20 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
   --show-progress \
   --progress-every 1
 ```
+
+## GitHub Actions automation
+
+Workflow file:
+
+- `.github/workflows/ctgov_collect.yml`
+
+Behavior:
+
+1. scheduled/manual collection of CTGov docs (resume mode)
+2. normalized dataset build
+3. static table build (`docs/data`)
+4. persistent `studies.jsonl` snapshot update with history:
+   - `data/ctgov/studies.jsonl`
+   - `data/ctgov/history/studies_*.jsonl`
+   - `data/ctgov/collection_state.json`
+5. deploy table to GitHub Pages

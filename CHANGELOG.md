@@ -2,6 +2,28 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.2.1 - Unreleased
+
+### Added
+
+- Added scheduled GitHub Actions workflow for CTGov collection and table publishing:
+  - `.github/workflows/ctgov_collect.yml`
+- Added static table builder:
+  - `scripts/build_studies_table.py` (CSV -> `docs/data/{studies.csv,studies.json,index.html}`)
+- Added studies history updater:
+  - `scripts/update_studies_history.py`
+  - persists latest studies snapshot and change history in:
+    - `data/ctgov/studies.jsonl`
+    - `data/ctgov/history/studies_*.jsonl`
+    - `data/ctgov/collection_state.json`
+
+### Tests
+
+- Added unit test for studies history update behavior:
+  - `tests/test_update_studies_history_unit.py`
+- Added unit test for static studies table builder:
+  - `tests/test_build_studies_table_unit.py`
+
 ## v0.2.0 - 2026-02-09
 
 ### Added (Service Refactor)
