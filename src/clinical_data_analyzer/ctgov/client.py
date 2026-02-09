@@ -19,6 +19,25 @@ class CTGovRateLimitError(CTGovError):
     pass
 
 
+class CTGovSort:
+    LAST_UPDATE_POST_DATE = "LastUpdatePostDate"
+
+    @staticmethod
+    def asc(field: str) -> str:
+        return f"{field}:asc"
+
+    @staticmethod
+    def desc(field: str) -> str:
+        return f"{field}:desc"
+
+
+class CTGovFilterKey:
+    OVERALL_STATUS = "overallStatus"
+    GEO = "geo"
+    IDS = "ids"
+    ADVANCED = "advanced"
+
+
 CTGOV_QUERY_KEYS = {
     "cond",
     "intr",
@@ -70,6 +89,47 @@ def _merge_query(
                 raise CTGovError(f"Invalid query key: {base_key}")
         if key not in params:
             params[key] = v
+
+
+def extract_study_compact(study_obj: Dict[str, Any]) -> Dict[str, Any]:
+    ps = study_obj.get("protocolSection") or {}
+    ident = ps.get("identificationModule") or {}
+    status = ps.get("statusModule") or {}
+    conditions_mod = ps.get("conditionsModule") or {}
+    interventions_mod = ps.get("interventionsModule") or {}
+    sponsors_mod = ps.get("sponsorsModule") or {}
+
+    conditions = conditions_mod.get("conditions") or []
+    if not isinstance(conditions, list):
+        conditions = []
+
+    interventions = interventions_mod.get("interventions") or []
+    intervention_names = [
+        it.get("name")
+        for it in interventions
+        if isinstance(it, dict) and isinstance(it.get("name"), str)
+    ]
+
+    lead = sponsors_mod.get("leadSponsor") or {}
+    collaborators = sponsors_mod.get("collaborators") or []
+    collaborator_names = [
+        c.get("name")
+        for c in collaborators
+        if isinstance(c, dict) and isinstance(c.get("name"), str)
+    ]
+
+    return {
+        "nct_id": ident.get("nctId"),
+        "brief_title": ident.get("briefTitle"),
+        "official_title": ident.get("officialTitle"),
+        "overall_status": status.get("overallStatus"),
+        "start_date": status.get("startDateStruct", {}).get("date"),
+        "completion_date": status.get("completionDateStruct", {}).get("date"),
+        "conditions": [c for c in conditions if isinstance(c, str)],
+        "interventions": intervention_names,
+        "lead_sponsor": lead.get("name"),
+        "collaborators": collaborator_names,
+    }
 @dataclass(frozen=True)
 class CTGovClient:
     base_url: str = "https://clinicaltrials.gov/api/v2"
@@ -235,3 +295,13 @@ class CTGovClient:
                 params = {}
             params["format"] = fmt
         return self._get(f"/studies/{nct_id}", params=params)
+
+    def get_study_compact(
+        self,
+        nct_id: str,
+        *,
+        fields: Optional[Union[str, Sequence[str]]] = None,
+        fmt: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        study = self.get_study(nct_id, fields=fields, fmt=fmt)
+        return extract_study_compact(study)
