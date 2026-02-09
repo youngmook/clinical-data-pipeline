@@ -54,6 +54,7 @@ data/
 cache/
 out/
 out_hnid/
+out_*/
 *.parquet
 *.feather
 *.csv
