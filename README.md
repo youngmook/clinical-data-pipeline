@@ -187,6 +187,25 @@ pip install -e ".[dev]"
 
 ---
 
+## Documentation
+
+Project documentation is in the `docs/` folder.
+
+- English:
+  - docs/overview.md
+  - docs/ctgov.md
+  - docs/pubchem.md
+  - docs/pipeline.md
+  - docs/cli.md
+- Korean:
+  - docs/overview.ko.md
+  - docs/ctgov.ko.md
+  - docs/pubchem.ko.md
+  - docs/pipeline.ko.md
+  - docs/cli.ko.md
+
+---
+
 ## CLI usage
 
 A minimal command-line interface is provided for quick, reproducible runs
