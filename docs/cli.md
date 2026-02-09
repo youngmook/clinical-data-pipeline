@@ -22,7 +22,11 @@ Options:
 - --cid: direct PubChem CID
 - --out: output directory (default: out)
 
-Outputs are the same as build_dataset_for_cids (see docs/pipeline.md).
+Outputs are the same as build_dataset_for_cids (see docs/pipeline.md):
+
+- compounds.jsonl
+- links.jsonl
+- studies.jsonl
 
 ### 2) Download HNID CIDs
 
@@ -35,6 +39,12 @@ python -m clinical_data_analyzer.cli hnid-cids --hnid 1856916 --out out_hnid/cli
 ```bash
 python -m clinical_data_analyzer.cli collect-ctgov --hnid 1856916 --limit 10 --out out_ctgov
 ```
+
+Outputs:
+
+- cid_nct_links.jsonl
+- compounds.jsonl
+- studies.jsonl
 
 Optional fields for CT.gov:
 
