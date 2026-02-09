@@ -1,6 +1,6 @@
 [project]
 name = "clinical-data-analyzer"
-version = "0.1.0"
+version = "0.2.0"
 description = "Clinical data pipeline integrating PubChem and ClinicalTrials.gov"
 requires-python = ">=3.9"
 dependencies = [

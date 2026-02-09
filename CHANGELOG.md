@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## 2026-02-09
+## v0.2.0 - 2026-02-09
 
 ### Added (Service Refactor)
 
@@ -12,8 +12,7 @@ All notable changes to this project are documented in this file.
   - `CollectCtgovDocsResult`
   - `collect_ctgov_docs(...)`
 - Added thin script wrappers:
-  - `scripts/collect_ctgov_docs.py` (main step1-3 runner)
-  - `scripts/collect_ctgov_docs_first1.py` (quick smoke run: first 1 CID / first 1 NCT)
+  - `scripts/collect_ctgov_docs.py` (main step1-3 runner, also supports quick smoke via limits)
 
 ### Changed (Collection Flow)
 
@@ -52,6 +51,11 @@ All notable changes to this project are documented in this file.
 - Updated `src/clinical_data_analyzer/pipeline/cid_to_nct.py`:
   - source tracking for fallback path
   - non-fail-fast behavior with per-CID error recording.
+
+### Removed
+
+- Removed one-off demo wrapper `scripts/collect_ctgov_docs_first1.py`.
+- Standardized smoke test path to `scripts/collect_ctgov_docs.py --limit-cids 1 --limit-ncts 1`.
 
 ### Documentation
 

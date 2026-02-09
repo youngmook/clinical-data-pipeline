@@ -253,13 +253,18 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
   --progress-every 1
 ```
 
-Quick smoke:
+Quick smoke (first CID + first NCT):
 
 ```bash
-PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgov_docs_first1.py \
+PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgov_docs.py \
+  --hnid 3647573 \
+  --limit-cids 1 \
+  --limit-ncts 1 \
   --folder-name ctgov_docs_first1 \
   --out-root out \
-  --use-ctgov-fallback
+  --use-ctgov-fallback \
+  --show-progress \
+  --progress-every 1
 ```
 
 ### Download clinical-trial–related CIDs (HNID)
