@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Iterator, Optional, Sequence, Union
 import json
+import logging
 import time
 
 import requests
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
+logger = logging.getLogger(__name__)
 
 class CTGovError(RuntimeError):
     pass
@@ -74,6 +76,8 @@ class CTGovClient:
     timeout: float = 30.0
     user_agent: str = "clinical-data-pipeline/0.1 (magicai-labs)"
     max_page_size: int = 1000
+    log_requests: bool = False
+    request_id_headers: Sequence[str] = ("x-request-id", "x-requestid", "x-correlation-id")
 
     def _session(self) -> requests.Session:
         s = requests.Session()
@@ -90,6 +94,13 @@ class CTGovClient:
         url = f"{self.base_url}{path}"
         with self._session() as s:
             r = s.get(url, params=params, timeout=self.timeout)
+            if self.log_requests:
+                request_id = None
+                for h in self.request_id_headers:
+                    request_id = r.headers.get(h)
+                    if request_id:
+                        break
+                logger.info("CTGov GET %s status=%s request_id=%s", url, r.status_code, request_id)
             try:
                 if r.status_code in (408, 429, 503, 504):
                     retry_after = r.headers.get("Retry-After")
