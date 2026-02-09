@@ -317,6 +317,9 @@ def build_clinical_dataset(
                     "start_date": core.get("start_date", ""),
                     "completion_date": core.get("completion_date", ""),
                     "last_update_date": core.get("last_update_date", ""),
+                    "ctgov_url": f"https://clinicaltrials.gov/study/{nct}",
+                    "pubchem_url": f"https://pubchem.ncbi.nlm.nih.gov/compound/{cid}",
+                    # Backward-compatible alias for older consumers.
                     "source_url": f"https://clinicaltrials.gov/study/{nct}",
                 }
             )
@@ -341,6 +344,8 @@ def build_clinical_dataset(
                 "start_date",
                 "completion_date",
                 "last_update_date",
+                "ctgov_url",
+                "pubchem_url",
                 "source_url",
             ]
         )
@@ -359,6 +364,8 @@ def build_clinical_dataset(
                     row["start_date"],
                     row["completion_date"],
                     row["last_update_date"],
+                    row["ctgov_url"],
+                    row["pubchem_url"],
                     row["source_url"],
                 ]
             )

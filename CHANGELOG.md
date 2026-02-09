@@ -16,6 +16,9 @@ All notable changes to this project are documented in this file.
     - `data/ctgov/studies.jsonl`
     - `data/ctgov/history/studies_*.jsonl`
     - `data/ctgov/collection_state.json`
+- Added dual study links in normalized/table outputs:
+  - `ctgov_url` and `pubchem_url` in clinical compound trial dataset
+  - static table now shows both CTGov and PubChem links
 
 ### Tests
 
