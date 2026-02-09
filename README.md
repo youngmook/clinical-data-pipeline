@@ -177,11 +177,27 @@ src/clinical_data_analyzer/
 
 ---
 
-## Installation (development)
+## Environment Setup
+
+### Conda (Recommended)
 
 ```bash
 conda create -n clinical-pipeline python=3.11 -y
 conda activate clinical-pipeline
+pip install -e .
+```
+
+Optional development dependencies:
+
+```bash
+pip install -e ".[dev]"
+```
+
+### venv (Alternative)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -e .
 ```
 
