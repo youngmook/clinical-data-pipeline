@@ -11,6 +11,68 @@ do not expose trial IDs for specific compounds.
 
 ---
 
+## Beginner Quickstart (Copy & Paste)
+
+If this is your first run, use this section first.
+
+### Option A: Conda (recommended if you already use conda)
+
+```bash
+conda create -n clinical-pipeline python=3.11 -y
+conda activate clinical-pipeline
+pip install -e .
+```
+
+Run a small smoke test (first CID + first NCT):
+
+```bash
+PYTHONUNBUFFERED=1 python -u scripts/collect_ctgov_docs.py \
+  --hnid 3647573 \
+  --limit-cids 1 \
+  --limit-ncts 1 \
+  --folder-name ctgov_docs_first1 \
+  --out-root out \
+  --use-ctgov-fallback \
+  --show-progress \
+  --progress-every 1
+```
+
+### Option B: uv (recommended if you prefer fast Python tooling)
+
+```bash
+uv venv .venv --python 3.11
+source .venv/bin/activate
+uv pip install -e .
+```
+
+Run the same smoke test:
+
+```bash
+PYTHONUNBUFFERED=1 uv run python -u scripts/collect_ctgov_docs.py \
+  --hnid 3647573 \
+  --limit-cids 1 \
+  --limit-ncts 1 \
+  --folder-name ctgov_docs_first1 \
+  --out-root out \
+  --use-ctgov-fallback \
+  --show-progress \
+  --progress-every 1
+```
+
+Expected output files:
+
+```
+out/ctgov_docs_first1/
+├─ cids.txt
+├─ cids.jsonl
+├─ cid_nct_links.jsonl
+├─ cid_nct_map.csv
+├─ compounds.jsonl
+└─ studies.jsonl
+```
+
+---
+
 ## What this project does
 
 This project provides a minimal but extensible pipeline to:
@@ -179,7 +241,31 @@ src/clinical_data_analyzer/
 
 ## Environment Setup
 
-### Conda (Recommended)
+Choose one environment setup.
+
+### uv (Recommended for fast local setup)
+
+Create environment and install:
+
+```bash
+uv venv .venv --python 3.11
+source .venv/bin/activate
+uv pip install -e .
+```
+
+Optional development dependencies:
+
+```bash
+uv pip install -e ".[dev]"
+```
+
+Run without activating shell state (optional):
+
+```bash
+uv run python scripts/run_mvp_pipeline.py --hnid 3647573 --out-dir out_mvp --use-ctgov-fallback --resume
+```
+
+### Conda (Recommended if you already use conda)
 
 ```bash
 conda create -n clinical-pipeline python=3.11 -y
@@ -323,14 +409,6 @@ out_ctgov/
 ├─ compounds.jsonl
 ├─ links.jsonl
 └─ studies.jsonl
-```
-
----
-
-Optional development dependencies:
-
-```bash
-pip install -e ".[dev]"
 ```
 
 ---
