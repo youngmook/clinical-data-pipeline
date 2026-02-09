@@ -127,11 +127,13 @@ def build_cid_nct_map(
     *,
     out_dir: Path,
     include_compound_props: bool = True,
+    use_ctgov_fallback: bool = False,
 ) -> Dict[str, Path]:
     cfg = CidToNctConfig(
         out_dir=str(out_dir),
         write_jsonl=True,
         include_compound_props=include_compound_props,
+        use_ctgov_fallback=use_ctgov_fallback,
     )
     outputs = export_cids_nct_dataset(list(cids), config=cfg)
     links_path = outputs["cid_nct_links"]

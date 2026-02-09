@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 import json
 
+from clinical_data_analyzer.ctgov import CTGovClient
+from clinical_data_analyzer.pipeline.linker import CompoundTrialLinker, LinkerConfig
 from clinical_data_analyzer.pubchem import PubChemClient, PubChemPugViewClient
 
 
@@ -16,6 +18,13 @@ class CidToNctConfig:
     out_dir: str = "out_nct"
     write_jsonl: bool = True
     include_compound_props: bool = True  # InChIKey/SMILES/IUPACName 포함 여부
+    use_ctgov_fallback: bool = False
+    fallback_max_synonyms: int = 12
+    fallback_ctgov_page_size: int = 50
+    fallback_ctgov_max_pages_per_term: int = 1
+    fallback_min_score: int = 2
+    fallback_max_links_per_cid: int = 30
+    fail_fast: bool = False
 
 
 def _ensure_dir(path: Path) -> None:
@@ -64,6 +73,7 @@ def export_cids_nct_dataset(
     config: Optional[CidToNctConfig] = None,
     pubchem: Optional[PubChemClient] = None,
     pug_view: Optional[PubChemPugViewClient] = None,
+    ctgov: Optional[CTGovClient] = None,
 ) -> Dict[str, Path]:
     """
     Export JSONL files:
@@ -76,30 +86,77 @@ def export_cids_nct_dataset(
 
     pubchem = pubchem or PubChemClient()
     pug_view = pug_view or PubChemPugViewClient()
+    ctgov = ctgov or CTGovClient()
+    linker: Optional[CompoundTrialLinker] = None
+    if cfg.use_ctgov_fallback:
+        linker = CompoundTrialLinker(
+            pubchem,
+            ctgov,
+            config=LinkerConfig(
+                max_synonyms=cfg.fallback_max_synonyms,
+                ctgov_page_size=cfg.fallback_ctgov_page_size,
+                ctgov_max_pages_per_term=cfg.fallback_ctgov_max_pages_per_term,
+                min_score=cfg.fallback_min_score,
+                max_links_per_cid=cfg.fallback_max_links_per_cid,
+            ),
+        )
 
     links_rows: List[dict] = []
     compounds_rows: List[dict] = []
 
     for cid in cids:
-        nct_ids = pug_view.nct_ids_for_cid(cid)
+        source = "PubChem PUG-View annotations"
+        nct_ids: List[str] = []
+        link_error: Optional[str] = None
 
-        links_rows.append(
-            {
-                "cid": cid,
-                "nct_ids": nct_ids,
-                "n_nct": len(nct_ids),
-                "source": "PubChem PUG-View annotations",
-            }
-        )
+        try:
+            if hasattr(pug_view, "nct_ids_for_cid_with_source"):
+                nct_ids, source = pug_view.nct_ids_for_cid_with_source(cid)
+            else:
+                nct_ids = pug_view.nct_ids_for_cid(cid)
+        except Exception as e:
+            link_error = f"pug_view_error:{type(e).__name__}:{e}"
+            if cfg.fail_fast:
+                raise
+
+        if not nct_ids and linker is not None:
+            try:
+                link_results = linker.link_cid(cid)
+                nct_ids = sorted({lr.nct_id for lr in link_results})
+                if nct_ids:
+                    source = "CTGov term-link fallback (no PUG-View NCT IDs)"
+            except Exception as e:
+                fallback_error = f"ctgov_fallback_error:{type(e).__name__}:{e}"
+                link_error = f"{link_error}|{fallback_error}" if link_error else fallback_error
+                if cfg.fail_fast:
+                    raise
+
+        link_row = {
+            "cid": cid,
+            "nct_ids": nct_ids,
+            "n_nct": len(nct_ids),
+            "source": source,
+        }
+        if link_error:
+            link_row["error"] = link_error
+        links_rows.append(link_row)
 
         if cfg.include_compound_props:
-            props = pubchem.compound_properties(cid)
+            props: Dict[str, Optional[str]] = {}
+            comp_error: Optional[str] = None
+            try:
+                props = pubchem.compound_properties(cid)
+            except Exception as e:
+                comp_error = f"compound_props_error:{type(e).__name__}:{e}"
+                if cfg.fail_fast:
+                    raise
             compounds_rows.append(
                 {
                     "cid": cid,
                     "inchikey": props.get("InChIKey"),
                     "canonical_smiles": props.get("CanonicalSMILES"),
                     "iupac_name": props.get("IUPACName"),
+                    **({"error": comp_error} if comp_error else {}),
                 }
             )
 

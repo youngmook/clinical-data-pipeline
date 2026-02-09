@@ -10,6 +10,10 @@ from .pug_view import (
     PubChemPugViewClient,
     PubChemPugViewError,
 )
+from .web_fallback import (
+    PubChemWebFallbackClient,
+    PubChemWebFallbackError,
+)
 
 __all__ = [
     # Core PUG REST client
@@ -23,4 +27,7 @@ __all__ = [
     # PUG-View annotations (CID → NCT IDs)
     "PubChemPugViewClient",
     "PubChemPugViewError",
+    # Web page fallback
+    "PubChemWebFallbackClient",
+    "PubChemWebFallbackError",
 ]

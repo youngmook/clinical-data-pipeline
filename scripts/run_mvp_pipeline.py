@@ -39,6 +39,11 @@ def main() -> int:
         default=None,
         help="Comma-separated CT.gov study fields (optional)",
     )
+    p.add_argument(
+        "--use-ctgov-fallback",
+        action="store_true",
+        help="If PUG-View returns no NCT IDs, use CTGov term-link fallback",
+    )
     p.add_argument("--resume", action="store_true", help="Resume CTGov study fetch")
     args = p.parse_args()
 
@@ -48,7 +53,12 @@ def main() -> int:
     step1 = fetch_cids_by_hnids(hnids, out_dir=out_dir, limit=args.limit_cids)
     cids = read_cids(step1["cids_txt"])
 
-    step2 = build_cid_nct_map(cids, out_dir=out_dir, include_compound_props=True)
+    step2 = build_cid_nct_map(
+        cids,
+        out_dir=out_dir,
+        include_compound_props=True,
+        use_ctgov_fallback=args.use_ctgov_fallback,
+    )
     nct_ids = load_nct_ids_from_links(step2["cid_nct_links"])
 
     ctgov_stats = fetch_ctgov_studies(

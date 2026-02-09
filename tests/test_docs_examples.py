@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List
+import json
 
 import requests
 import pytest
@@ -18,7 +19,13 @@ from clinical_data_analyzer.ctgov import (
 from clinical_data_analyzer.pubchem.client import PubChemClient
 from clinical_data_analyzer.pubchem import PubChemClassificationClient
 from clinical_data_analyzer.pubchem import PubChemPugViewClient
+from clinical_data_analyzer.pubchem.web_fallback import (
+    PubChemWebFallbackClient,
+    extract_nct_ids_from_sdq_payload,
+    extract_nct_ids_from_html,
+)
 from clinical_data_analyzer.pipeline.build_dataset import build_dataset_for_cids
+from clinical_data_analyzer.pipeline.cid_to_nct import CidToNctConfig, export_cids_nct_dataset
 
 
 class _DummyResponse:
@@ -167,6 +174,213 @@ def test_pug_view_extracts_nct(monkeypatch):
 
     ncts = pv.nct_ids_for_cid(2244)
     assert ncts == ["NCT01234567"]
+
+
+def test_pug_view_heading_lookup_for_external_clinical_trials(monkeypatch):
+    base_payload = {
+        "Record": {
+            "Section": [
+                {
+                    "Information": [
+                        {"ExternalTableName": "clinicaltrials"},
+                    ]
+                }
+            ]
+        }
+    }
+    heading_payload = {
+        "Record": {
+            "Section": [
+                {
+                    "Information": [
+                        {"StringValue": "Referenced study NCT76543210"},
+                    ]
+                }
+            ]
+        }
+    }
+
+    pv = PubChemPugViewClient()
+    monkeypatch.setattr(PubChemPugViewClient, "get_compound_record", lambda self, cid: base_payload)
+    monkeypatch.setattr(
+        PubChemPugViewClient,
+        "get_compound_record_by_heading",
+        lambda self, cid, heading: heading_payload,
+    )
+
+    ncts = pv.nct_ids_for_cid(6)
+    assert ncts == ["NCT76543210"]
+
+
+def test_pug_view_heading_lookup_for_drug_medication_info(monkeypatch):
+    base_payload = {"Record": {"Section": [{"TOCHeading": "Overview"}]}}
+
+    def _by_heading(self, cid, heading):
+        if heading == "Drug-and-Medication-Information":
+            return {
+                "Record": {
+                    "Section": [
+                        {"Information": [{"StringValue": "CTID: NCT01214278"}]}
+                    ]
+                }
+            }
+        return {"Record": {"Section": []}}
+
+    pv = PubChemPugViewClient()
+    monkeypatch.setattr(PubChemPugViewClient, "get_compound_record", lambda self, cid: base_payload)
+    monkeypatch.setattr(PubChemPugViewClient, "get_compound_record_by_heading", _by_heading)
+
+    ncts = pv.nct_ids_for_cid(38)
+    assert ncts == ["NCT01214278"]
+
+
+def test_extract_nct_ids_from_html():
+    html = "<html><body>CTID: NCT01214278 and NCT00000001</body></html>"
+    assert extract_nct_ids_from_html(html) == ["NCT00000001", "NCT01214278"]
+
+
+def test_extract_nct_ids_from_sdq_payload():
+    payload = {
+        "SDQOutputSet": [
+            {
+                "rows": [
+                    {"ctid": "NCT01214278"},
+                    {"ctid": "NCT00000001"},
+                ]
+            }
+        ]
+    }
+    assert extract_nct_ids_from_sdq_payload(payload) == ["NCT00000001", "NCT01214278"]
+
+
+def test_web_fallback_uses_sdq_first():
+    class DummyWebFallback(PubChemWebFallbackClient):
+        def get_clinicaltrials_sdq_payload(self, cid: int, *, limit: int = 200):
+            return {"rows": [{"ctid": "NCT01214278"}]}
+
+        def get_compound_page_html(self, cid: int):
+            raise AssertionError("html fallback should not be called when sdq has NCT")
+
+    ncts, source = DummyWebFallback().nct_ids_for_cid_with_source(38)
+    assert ncts == ["NCT01214278"]
+    assert source.startswith("PubChem web clinicaltrials endpoint fallback")
+
+
+def test_pug_view_uses_web_fallback_when_rest_empty(monkeypatch):
+    pv = PubChemPugViewClient(use_web_fallback=True)
+    monkeypatch.setattr(PubChemPugViewClient, "get_compound_record", lambda self, cid: {"Record": {}})
+    monkeypatch.setattr(
+        PubChemPugViewClient,
+        "get_compound_record_by_heading",
+        lambda self, cid, heading: {"Record": {"Section": []}},
+    )
+
+    class DummyWebFallback(PubChemWebFallbackClient):
+        def nct_ids_for_cid_with_source(self, cid: int):
+            return ["NCT01214278"], "PubChem web clinicaltrials endpoint fallback (sdq)"
+
+    ncts, source = pv.nct_ids_for_cid_with_source(38, web_fallback_client=DummyWebFallback())
+    assert ncts == ["NCT01214278"]
+    assert source.startswith("PubChem web clinicaltrials endpoint fallback")
+
+
+def test_cid_to_nct_ctgov_fallback(tmp_path):
+    class DummyPubChem:
+        def compound_properties(self, cid: int):
+            return {"IUPACName": "aspirin"}
+
+        def synonyms(self, cid: int, max_items: int = 30):
+            return ["Aspirin"]
+
+    class DummyPugView:
+        def nct_ids_for_cid(self, cid: int):
+            return []
+
+    class DummyCTGov:
+        def iter_studies(self, intr=None, term=None, page_size=100, max_pages=1):
+            yield {
+                "protocolSection": {
+                    "identificationModule": {"nctId": "NCT00000042", "briefTitle": "Aspirin trial"}
+                }
+            }
+
+    cfg = CidToNctConfig(
+        out_dir=str(tmp_path),
+        write_jsonl=True,
+        include_compound_props=False,
+        use_ctgov_fallback=True,
+    )
+    outputs = export_cids_nct_dataset(
+        [2244],
+        config=cfg,
+        pubchem=DummyPubChem(),
+        pug_view=DummyPugView(),
+        ctgov=DummyCTGov(),
+    )
+
+    rows = [json.loads(line) for line in outputs["cid_nct_links"].read_text(encoding="utf-8").splitlines() if line]
+    assert rows[0]["nct_ids"] == ["NCT00000042"]
+    assert rows[0]["source"].startswith("CTGov term-link fallback")
+
+
+def test_cid_to_nct_source_from_pug_view_fallback(tmp_path):
+    class DummyPubChem:
+        def compound_properties(self, cid: int):
+            return {"IUPACName": "compound"}
+
+    class DummyPugView:
+        def nct_ids_for_cid_with_source(self, cid: int):
+            return ["NCT01214278"], "PubChem web fallback (compound page HTML)"
+
+    cfg = CidToNctConfig(
+        out_dir=str(tmp_path),
+        write_jsonl=True,
+        include_compound_props=False,
+        use_ctgov_fallback=False,
+    )
+    outputs = export_cids_nct_dataset(
+        [38],
+        config=cfg,
+        pubchem=DummyPubChem(),
+        pug_view=DummyPugView(),
+    )
+
+    rows = [json.loads(line) for line in outputs["cid_nct_links"].read_text(encoding="utf-8").splitlines() if line]
+    assert rows[0]["nct_ids"] == ["NCT01214278"]
+    assert rows[0]["source"].startswith("PubChem web fallback")
+
+
+def test_cid_to_nct_non_fail_fast_on_errors(tmp_path):
+    class DummyPubChem:
+        def compound_properties(self, cid: int):
+            raise RuntimeError("no pubchem")
+
+    class DummyPugView:
+        def nct_ids_for_cid(self, cid: int):
+            raise RuntimeError("no pug_view")
+
+    cfg = CidToNctConfig(
+        out_dir=str(tmp_path),
+        write_jsonl=True,
+        include_compound_props=True,
+        use_ctgov_fallback=False,
+        fail_fast=False,
+    )
+    outputs = export_cids_nct_dataset(
+        [38, 51],
+        config=cfg,
+        pubchem=DummyPubChem(),
+        pug_view=DummyPugView(),
+    )
+
+    link_rows = [json.loads(line) for line in outputs["cid_nct_links"].read_text(encoding="utf-8").splitlines() if line]
+    assert len(link_rows) == 2
+    assert link_rows[0]["nct_ids"] == []
+    assert "pug_view_error" in link_rows[0].get("error", "")
+
+    comp_rows = [json.loads(line) for line in outputs["compounds"].read_text(encoding="utf-8").splitlines() if line]
+    assert len(comp_rows) == 2
+    assert "compound_props_error" in comp_rows[0].get("error", "")
 
 
 def test_pipeline_build_dataset(monkeypatch, tmp_path):

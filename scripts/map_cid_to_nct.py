@@ -19,6 +19,11 @@ def main() -> int:
         action="store_true",
         help="Do not request compound properties (InChIKey/SMILES/IUPACName)",
     )
+    p.add_argument(
+        "--use-ctgov-fallback",
+        action="store_true",
+        help="If PUG-View returns no NCT IDs, use CTGov term-link fallback",
+    )
     args = p.parse_args()
 
     cids = read_cids(Path(args.cids_file))
@@ -26,6 +31,7 @@ def main() -> int:
         cids,
         out_dir=Path(args.out_dir),
         include_compound_props=not args.no_compound_props,
+        use_ctgov_fallback=args.use_ctgov_fallback,
     )
 
     print(f"cids: {len(cids)}")
