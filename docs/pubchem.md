@@ -61,7 +61,7 @@ You can also retrieve the source path:
 
 ## PubChemWebFallbackClient
 
-Module: src/clinical_data_analyzer/pubchem/web_fallback.py
+Module: src/clinical_data_analyzer/pubchem/web_fallback/
 
 Methods:
 
@@ -69,11 +69,28 @@ Methods:
 - get_clinicaltrials_sdq_payload(cid) -> Dict
 - get_eu_register_sdq_payload(cid) -> Dict
 - get_japan_niph_sdq_payload(cid) -> Dict
+- get_normalized_trials(cid, collection="clinicaltrials", limit=200) -> List[Dict]
+- get_normalized_trials_union(cid, collections=(...), limit_per_collection=200) -> (List[Dict], List[str])
 - get_compound_page_html(cid) -> str
 - nct_ids_for_cid_with_source(cid) -> (List[str], str)
 - nct_ids_for_cid(cid) -> List[str]
 
 This is intended as a fallback layer when REST responses are incomplete for a CID.
+
+Normalized trial rows use a common schema across collections:
+- id (ctid or eudractnumber)
+- date (date or updatedate normalized to date)
+- title
+- phase
+- status
+- id_url (trial hyperlink from source)
+- link (backward-compatible alias of id_url)
+- cids
+
+Union schema mode:
+- Merges rows from ctgov/eu/jp collections
+- Keeps common keys and collection-specific keys together
+- Aligns rows so all keys exist (missing values are None)
 
 ## Examples
 

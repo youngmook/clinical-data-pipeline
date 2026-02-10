@@ -61,7 +61,7 @@ source 경로까지 함께 가져오는 메서드:
 
 ## PubChemWebFallbackClient
 
-모듈: `src/clinical_data_analyzer/pubchem/web_fallback.py`
+모듈: `src/clinical_data_analyzer/pubchem/web_fallback/`
 
 메서드:
 
@@ -69,11 +69,28 @@ source 경로까지 함께 가져오는 메서드:
 - `get_clinicaltrials_sdq_payload(cid) -> Dict`
 - `get_eu_register_sdq_payload(cid) -> Dict`
 - `get_japan_niph_sdq_payload(cid) -> Dict`
+- `get_normalized_trials(cid, collection="clinicaltrials", limit=200) -> List[Dict]`
+- `get_normalized_trials_union(cid, collections=(...), limit_per_collection=200) -> (List[Dict], List[str])`
 - `get_compound_page_html(cid) -> str`
 - `nct_ids_for_cid_with_source(cid) -> (List[str], str)`
 - `nct_ids_for_cid(cid) -> List[str]`
 
 이 클라이언트는 특정 CID에서 REST 응답이 불완전할 때 fallback 레이어로 사용합니다.
+
+정규화된 trial row 공통 스키마:
+- `id` (`ctid` 또는 `eudractnumber`)
+- `date` (`date` 또는 `updatedate`를 `date`로 통합)
+- `title`
+- `phase`
+- `status`
+- `id_url` (원천 trial 하이퍼링크)
+- `link` (`id_url`의 하위호환 별칭)
+- `cids`
+
+합집합 스키마 모드:
+- ctgov/eu/jp 컬렉션 row를 함께 병합
+- 공통 키와 컬렉션별 키를 모두 유지
+- 모든 row에 동일 키가 있도록 정렬(없는 값은 `None`)
 
 ## 예시
 

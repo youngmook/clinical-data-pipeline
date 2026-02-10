@@ -228,7 +228,7 @@ src/clinical_data_analyzer/
 │  ├─ classification_nodes.py    # HNID → CID (Classification Nodes API)
 │  ├─ clinical_trials_nodes.py   # Clinical-trial–related HNID helpers
 │  └─ pug_view.py                # PUG-View: NCT ID extraction
-│  └─ web_fallback.py            # Web clinicaltrials endpoint/HTML fallback for NCT IDs
+│  └─ web_fallback/              # Web clinicaltrials endpoint/HTML fallback for NCT IDs
 │
 ├─ ctgov/
 │  └─ client.py                  # ClinicalTrials.gov v2 API

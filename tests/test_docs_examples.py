@@ -21,6 +21,10 @@ from clinical_data_analyzer.pubchem import PubChemClassificationClient
 from clinical_data_analyzer.pubchem import PubChemPugViewClient
 from clinical_data_analyzer.pubchem.web_fallback import (
     PubChemWebFallbackClient,
+    align_rows_to_union_schema,
+    extract_sdq_rows,
+    normalize_sdq_trial_row,
+    normalize_sdq_trial_row_union,
     extract_nct_ids_from_sdq_payload,
     extract_nct_ids_from_html,
 )
@@ -264,6 +268,62 @@ def test_web_fallback_uses_sdq_first():
     ncts, source = DummyWebFallback().nct_ids_for_cid_with_source(38)
     assert ncts == ["NCT01214278"]
     assert source.startswith("PubChem web clinicaltrials endpoint fallback")
+
+
+def test_normalize_sdq_trial_row_ctgov_uses_date_alias():
+    row = {
+        "ctid": "NCT01561508",
+        "title": "Trial",
+        "phase": "Phase 2",
+        "status": "Withdrawn",
+        "updatedate": "2012-12-24",
+        "link": "https://clinicaltrials.gov/study/NCT01561508",
+    }
+    out = normalize_sdq_trial_row(row, collection="clinicaltrials")
+    assert out["id"] == "NCT01561508"
+    assert out["date"] == "2012-12-24"
+    assert out["id_url"] == "https://clinicaltrials.gov/study/NCT01561508"
+
+
+def test_normalize_sdq_trial_row_eu_uses_eudract_as_id():
+    row = {
+        "eudractnumber": "2006-006023-39",
+        "title": "EU Trial",
+        "phase": "Phase 2",
+        "status": "Completed",
+        "date": "2007-09-24",
+        "link": "https://www.clinicaltrialsregister.eu/ctr-search/search?query=2006-006023-39",
+    }
+    out = normalize_sdq_trial_row(row, collection="clinicaltrials_eu")
+    assert out["id"] == "2006-006023-39"
+    assert out["date"] == "2007-09-24"
+    assert out["id_url"].startswith("https://www.clinicaltrialsregister.eu/")
+
+
+def test_extract_sdq_rows_and_union_alignment():
+    payload = {
+        "SDQOutputSet": [
+            {
+                "rows": [
+                    {"ctid": "NCT00000001", "updatedate": "2020-01-01", "title": "A"},
+                    {"eudractnumber": "2006-006023-39", "date": "2007-09-24", "status": "Completed"},
+                ]
+            }
+        ]
+    }
+    rows = extract_sdq_rows(payload)
+    assert len(rows) == 2
+
+    a = normalize_sdq_trial_row_union(rows[0], collection="clinicaltrials")
+    b = normalize_sdq_trial_row_union(rows[1], collection="clinicaltrials_eu")
+    aligned, keys = align_rows_to_union_schema([a, b])
+
+    assert "id" in keys
+    assert "date" in keys
+    assert "eudractnumber" in keys
+    assert "ctid" in keys
+    assert aligned[0]["id"] == "NCT00000001"
+    assert aligned[1]["id"] == "2006-006023-39"
 
 
 def test_pug_view_uses_web_fallback_when_rest_empty(monkeypatch):

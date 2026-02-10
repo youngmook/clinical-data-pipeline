@@ -32,7 +32,7 @@ This file is a practical handover for continuing work quickly.
 - `src/clinical_data_analyzer/pipeline/collect_ctgov_docs_service.py`
 - `src/clinical_data_analyzer/pipeline/cid_to_nct.py`
 - `src/clinical_data_analyzer/pubchem/pug_view.py`
-- `src/clinical_data_analyzer/pubchem/web_fallback.py`
+- `src/clinical_data_analyzer/pubchem/web_fallback/`
 - `scripts/collect_ctgov_docs.py`
 
 ## Output Contract (Step1-3 Collector)
