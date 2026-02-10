@@ -19,8 +19,8 @@ from .common import (
     normalize_sdq_trial_row_union,
 )
 from .ctgov import get_ctgov_normalized_trials, get_ctgov_sdq_payload
-from .eu import get_eu_normalized_trials, get_eu_sdq_payload
-from .jp import get_jp_normalized_trials, get_jp_sdq_payload
+from .eu_ctr import get_eu_normalized_trials, get_eu_sdq_payload
+from .jp_niph import get_jp_normalized_trials, get_jp_sdq_payload
 
 
 class PubChemWebFallbackClient(PubChemWebFallbackBaseClient):
