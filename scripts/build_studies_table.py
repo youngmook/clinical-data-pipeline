@@ -105,6 +105,8 @@ def _write_html(path: Path, title: str) -> None:
           <button id=\"nextBtn\">Next</button>
         </div>
         <div class=\"right\">
+          <button id=\"exportCsvBtn\">Export CSV</button>
+          <button id=\"exportJsonBtn\">Export JSON</button>
           <span id=\"pageInfo\">Page 1 / 1</span>
         </div>
       </div>
@@ -138,6 +140,35 @@ def _write_html(path: Path, title: str) -> None:
       `).join('');
     }}
 
+    function downloadText(filename, text, mime) {{
+      const blob = new Blob([text], {{ type: mime }});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }}
+
+    function toCsv(rows) {{
+      if (!rows.length) return '';
+      const headers = Object.keys(rows[0]);
+      const esc = (v) => {{
+        const s = String(v ?? '');
+        if (s.includes(',') || s.includes('\"') || s.includes('\\n')) {{
+          return '\"' + s.replaceAll('\"', '\"\"') + '\"';
+        }}
+        return s;
+      }};
+      const lines = [headers.join(',')];
+      for (const r of rows) {{
+        lines.push(headers.map(h => esc(r[h])).join(','));
+      }}
+      return lines.join('\\n') + '\\n';
+    }}
+
     async function main() {{
       const rows = await fetch('./studies.json').then(r => r.json());
       const q = document.getElementById('q');
@@ -146,6 +177,8 @@ def _write_html(path: Path, title: str) -> None:
       const pageInfo = document.getElementById('pageInfo');
       const prevBtn = document.getElementById('prevBtn');
       const nextBtn = document.getElementById('nextBtn');
+      const exportCsvBtn = document.getElementById('exportCsvBtn');
+      const exportJsonBtn = document.getElementById('exportJsonBtn');
 
       let filteredRows = rows.slice();
       let page = 1;
@@ -196,6 +229,14 @@ def _write_html(path: Path, title: str) -> None:
       nextBtn.addEventListener('click', () => {{
         page += 1;
         renderPage();
+      }});
+      exportCsvBtn.addEventListener('click', () => {{
+        const csv = toCsv(filteredRows);
+        downloadText('studies_filtered.csv', csv, 'text/csv;charset=utf-8');
+      }});
+      exportJsonBtn.addEventListener('click', () => {{
+        const json = JSON.stringify(filteredRows, null, 2) + '\\n';
+        downloadText('studies_filtered.json', json, 'application/json;charset=utf-8');
       }});
 
       applyFilter();

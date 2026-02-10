@@ -90,3 +90,5 @@ def test_build_studies_table_unit(tmp_path: Path):
     assert "studies.json" in html
     assert "ctgov_url || r.source_url" in html
     assert "pubchem" in html
+    assert "exportCsvBtn" in html
+    assert "exportJsonBtn" in html
