@@ -72,7 +72,7 @@ def normalize_sdq_trial_row(row: Dict[str, Any], *, collection: str) -> Dict[str
     if date_val is None:
         date_val = row.get("updatedate")
 
-    link_val = row.get("link")
+    link_val = row.get("id_url") or row.get("link")
 
     return {
         "collection": SDQ_COLLECTION_LABELS.get(collection, collection),
@@ -83,8 +83,6 @@ def normalize_sdq_trial_row(row: Dict[str, Any], *, collection: str) -> Dict[str
         "status": row.get("status"),
         "date": date_val,
         "id_url": link_val,
-        # Backward-compatible alias
-        "link": link_val,
         "cids": row.get("cids"),
     }
 

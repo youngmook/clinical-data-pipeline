@@ -27,8 +27,8 @@ def test_export_pubchem_trials_dataset_unit(tmp_path: Path):
         "class PubChemWebFallbackClient:\n"
         "    def get_normalized_trials_union(self, cid, collections=('clinicaltrials',), limit_per_collection=200):\n"
         "        rows=[\n"
-        "          {'collection':'clinicaltrials','id':'NCT00000001','title':'Trial A','phase':'Phase 2','status':'Completed','date':'2020-01-01','id_url':'https://clinicaltrials.gov/study/NCT00000001','link':'https://clinicaltrials.gov/study/NCT00000001'},\n"
-        "          {'collection':'clinicaltrials_eu','id':'2006-006023-39','title':'Trial EU','phase':'Phase 2','status':'Completed','date':'2007-09-24','id_url':'https://www.clinicaltrialsregister.eu/ctr-search/search?query=2006-006023-39','link':'https://www.clinicaltrialsregister.eu/ctr-search/search?query=2006-006023-39','eudractnumber':'2006-006023-39'},\n"
+        "          {'collection':'clinicaltrials','id':'NCT00000001','title':'Trial A','phase':'Phase 2','status':'Completed','date':'2020-01-01','id_url':'https://clinicaltrials.gov/study/NCT00000001'},\n"
+        "          {'collection':'clinicaltrials_eu','id':'2006-006023-39','title':'Trial EU','phase':'Phase 2','status':'Completed','date':'2007-09-24','id_url':'https://www.clinicaltrialsregister.eu/ctr-search/search?query=2006-006023-39','eudractnumber':'2006-006023-39'},\n"
         "        ]\n"
         "        keys=sorted({k for r in rows for k in r.keys()})\n"
         "        return rows, keys\n",

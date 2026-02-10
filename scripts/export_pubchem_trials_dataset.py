@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import csv
 import json
 from pathlib import Path
@@ -86,23 +87,18 @@ def _write_json_array_from_jsonl(jsonl_path: Path, json_path: Path) -> int:
     return n
 
 
-def _download_png(cid: int, out_path: Path, *, image_size: str = "400x400", timeout: float = 60.0) -> Tuple[str, Optional[str]]:
+def _fetch_png_data_uri(cid: int, *, image_size: str = "400x400", timeout: float = 60.0) -> Tuple[Optional[str], Optional[str]]:
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/PNG"
     params = {"image_size": image_size}
-
-    if out_path.exists() and out_path.stat().st_size > 0:
-        return str(out_path), None
 
     with requests.Session() as s:
         r = s.get(url, params=params, timeout=timeout)
         try:
             r.raise_for_status()
         except requests.HTTPError as e:
-            return "", f"image_http_error:{r.status_code}:{e}"
-
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_bytes(r.content)
-        return str(out_path), None
+            return None, f"image_http_error:{r.status_code}:{e}"
+        b64 = base64.b64encode(r.content).decode("ascii")
+        return f"data:image/png;base64,{b64}", None
 
 
 def _dedupe(values: Sequence[int]) -> List[int]:
@@ -117,8 +113,8 @@ def _dedupe(values: Sequence[int]) -> List[int]:
 
 
 def _sanitize_trial_row(row: Dict[str, object]) -> Dict[str, object]:
-    # Keep normalized identifiers only (`id`), drop source-specific raw id keys.
-    drop_keys = {"ctid", "eudractnumber"}
+    # Keep normalized schema (`id`, `date`) only.
+    drop_keys = {"ctid", "eudractnumber", "updatedate"}
     return {k: v for k, v in row.items() if k not in drop_keys}
 
 
@@ -153,14 +149,13 @@ def main() -> int:
     )
     p.add_argument("--limit-per-collection", type=int, default=200, help="Max rows per collection per CID")
     p.add_argument("--image-size", default="400x400", help="2D PNG size (e.g. 300x300)")
-    p.add_argument("--skip-images", action="store_true", help="Do not download 2D PNG images")
+    p.add_argument("--skip-images", action="store_true", help="Do not fetch 2D PNG images")
     p.add_argument("--resume", action="store_true", help="Resume from existing trials.jsonl")
     p.add_argument("--progress-every", type=int, default=50, help="Progress print interval")
     p.add_argument("--show-progress", action="store_true", help="Print per-CID progress logs")
     args = p.parse_args()
 
     out_dir = Path(args.out_dir)
-    images_dir = out_dir / "images"
     _ensure_dir(out_dir)
 
     cids_txt = out_dir / "cids.txt"
@@ -229,15 +224,9 @@ def main() -> int:
         except Exception as e:
             compound_error = f"compound_props_error:{type(e).__name__}:{e}"
 
-        image_path = ""
-        image_error = None
-        image_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/PNG?image_size={args.image_size}"
+        image_base64 = None
         if not args.skip_images:
-            image_path, image_error = _download_png(
-                cid,
-                images_dir / f"{cid}.png",
-                image_size=args.image_size,
-            )
+            image_base64, _ = _fetch_png_data_uri(cid, image_size=args.image_size)
 
         try:
             union_rows, _ = fallback.get_normalized_trials_union(
@@ -254,9 +243,7 @@ def main() -> int:
                 "inchikey": inchikey,
                 "iupac_name": iupac_name,
                 "compound_error": compound_error,
-                "image_path": image_path,
-                "image_url": image_url,
-                "image_error": image_error,
+                "image_base64": image_base64,
             }
             _write_jsonl(jsonl_path, [err_row])
             total_rows += 1
@@ -285,7 +272,6 @@ def main() -> int:
                     "status": None,
                     "date": None,
                     "id_url": None,
-                    "link": None,
                     "cids": None,
                     "note": "no_trials_found",
                 }
@@ -301,9 +287,7 @@ def main() -> int:
                     "inchikey": inchikey,
                     "iupac_name": iupac_name,
                     "compound_error": compound_error,
-                    "image_path": image_path,
-                    "image_url": image_url,
-                    "image_error": image_error,
+                    "image_base64": image_base64,
                 }
             )
             out_rows.append(row)
@@ -336,10 +320,8 @@ def main() -> int:
         "smiles",
         "inchikey",
         "iupac_name",
-        "image_path",
-        "image_url",
+        "image_base64",
         "compound_error",
-        "image_error",
     ]
     header = _build_union_header(jsonl_path, preferred_header)
     csv_rows = _write_csv_from_jsonl(jsonl_path, csv_path, header)
@@ -355,7 +337,6 @@ def main() -> int:
         "jsonl": str(jsonl_path),
         "csv": str(csv_path),
         "json": str(json_path),
-        "images_dir": str(images_dir),
         "csv_rows": csv_rows,
         "json_rows": json_rows,
     }
@@ -366,7 +347,6 @@ def main() -> int:
     print(f"jsonl: {jsonl_path}")
     print(f"csv: {csv_path}")
     print(f"json: {json_path}")
-    print(f"images: {images_dir}")
     print(f"summary: {summary_path}")
 
     return 0

@@ -86,7 +86,6 @@ source 경로까지 함께 가져오는 메서드:
 - `phase`
 - `status`
 - `id_url` (원천 trial 하이퍼링크)
-- `link` (`id_url`의 하위호환 별칭)
 - `cids`
 
 합집합 스키마 모드:

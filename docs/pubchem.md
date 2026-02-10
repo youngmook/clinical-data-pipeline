@@ -86,7 +86,6 @@ Normalized trial rows use a common schema across collections:
 - phase
 - status
 - id_url (trial hyperlink from source)
-- link (backward-compatible alias of id_url)
 - cids
 
 Union schema mode:
