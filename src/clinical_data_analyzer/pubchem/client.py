@@ -47,13 +47,17 @@ class PubChemClient:
         return [int(x) for x in cids]
 
     def compound_properties(self, cid: int) -> Dict[str, Any]:
-        props = "CanonicalSMILES,InChIKey,IUPACName"
+        props = "CanonicalSMILES,ConnectivitySMILES,InChIKey,IUPACName"
         url = f"{self.base_url}/compound/cid/{cid}/property/{props}/JSON"
         data = self._get_json(url)
         rows = data.get("PropertyTable", {}).get("Properties", []) or []
         if not rows:
             raise PubChemError(f"No properties for CID {cid}")
-        return rows[0]
+        row = rows[0]
+        # Some CIDs return ConnectivitySMILES only. Normalize to CanonicalSMILES key.
+        if isinstance(row, dict) and not row.get("CanonicalSMILES") and row.get("ConnectivitySMILES"):
+            row["CanonicalSMILES"] = row.get("ConnectivitySMILES")
+        return row
 
     def synonyms(self, cid: int, max_items: int = 50) -> List[str]:
         url = f"{self.base_url}/compound/cid/{cid}/synonyms/JSON"
