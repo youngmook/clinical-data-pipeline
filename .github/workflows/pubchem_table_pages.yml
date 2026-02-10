@@ -1,0 +1,114 @@
+name: pubchem-table-pages
+
+on:
+  workflow_dispatch:
+    inputs:
+      hnid:
+        description: "PubChem HNID"
+        required: false
+        default: "1856916"
+      extra_hnids:
+        description: "Comma-separated extra HNIDs"
+        required: false
+        default: ""
+      limit_cids:
+        description: "Limit CIDs for this run (empty = all)"
+        required: false
+        default: "100"
+      limit_per_collection:
+        description: "Max rows per collection per CID"
+        required: false
+        default: "20"
+      table_mode:
+        description: "HTML table mode"
+        required: false
+        default: "datatables"
+      image_size:
+        description: "PNG size for base64 images"
+        required: false
+        default: "400x400"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pubchem-table-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Build dataset
+        run: |
+          mkdir -p out/pubchem_trials_dataset_gh
+          EXTRA_ARGS=""
+          if [ -n "${{ inputs.extra_hnids }}" ]; then
+            EXTRA_ARGS="--extra-hnids ${{ inputs.extra_hnids }}"
+          fi
+
+          LIMIT_ARGS=""
+          if [ -n "${{ inputs.limit_cids }}" ]; then
+            LIMIT_ARGS="--limit-cids ${{ inputs.limit_cids }}"
+          fi
+
+          python scripts/export_pubchem_trials_dataset.py \
+            --hnid "${{ inputs.hnid }}" \
+            $EXTRA_ARGS \
+            $LIMIT_ARGS \
+            --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
+            --limit-per-collection "${{ inputs.limit_per_collection }}" \
+            --image-size "${{ inputs.image_size }}" \
+            --out-dir out/pubchem_trials_dataset_gh
+
+      - name: Build table HTML
+        run: |
+          python scripts/build_pubchem_trials_table.py \
+            --in-json out/pubchem_trials_dataset_gh/trials.json \
+            --mode "${{ inputs.table_mode }}" \
+            --out-html out/pubchem_trials_dataset_gh/index.html \
+            --title "PubChem Clinical Trials Table"
+
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p site
+          cp out/pubchem_trials_dataset_gh/index.html site/index.html
+          cp out/pubchem_trials_dataset_gh/trials.json site/trials.json
+          cp out/pubchem_trials_dataset_gh/trials.csv site/trials.csv
+          cp out/pubchem_trials_dataset_gh/summary.json site/summary.json
+          cp out/pubchem_trials_dataset_gh/cids.txt site/cids.txt
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
