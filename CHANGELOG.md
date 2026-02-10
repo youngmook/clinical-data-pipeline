@@ -8,6 +8,8 @@ All notable changes to this project are documented in this file.
 
 - Added scheduled GitHub Actions workflow for CTGov collection and table publishing:
   - `.github/workflows/ctgov_collect.yml`
+- Added dedicated GitHub Pages workflow for PubChem trials table publishing:
+  - `.github/workflows/pubchem_table_pages.yml`
 - Added static table builder:
   - `scripts/build_studies_table.py` (CSV -> `docs/data/{studies.csv,studies.json,index.html}`)
 - Added studies history updater:
@@ -19,6 +21,21 @@ All notable changes to this project are documented in this file.
 - Added dual study links in normalized/table outputs:
   - `ctgov_url` and `pubchem_url` in clinical compound trial dataset
   - static table now shows both CTGov and PubChem links
+- Added PubChem trials export pipeline:
+  - `scripts/export_pubchem_trials_dataset.py`
+  - exports normalized union rows across ctgov/eu/jp collections (`trials.jsonl`, `trials.csv`, `trials.json`, `summary.json`)
+- Added PubChem trials HTML builders:
+  - `scripts/build_pubchem_trials_table.py`
+  - supports `vanilla`, `datatables`, and `tabulator` modes
+
+### Changed
+
+- Refactored PubChem web fallback modules from a single file to provider-based package layout.
+- Normalized PubChem trial row schema now uses unified fields:
+  - `collection`, `collection_code`, `id`, `date`, `id_url`, `title`, `phase`, `status`, `cids`
+- PubChem trial export now stores structure images as base64 data URIs in output rows.
+- Added fallback to `ConnectivitySMILES` when `CanonicalSMILES` is missing in compound properties.
+- Updated `ctgov_collect` workflow to focus on scheduled collection/snapshot updates, while Pages deployment is handled by `pubchem_table_pages`.
 
 ### Tests
 
@@ -26,6 +43,8 @@ All notable changes to this project are documented in this file.
   - `tests/test_update_studies_history_unit.py`
 - Added unit test for static studies table builder:
   - `tests/test_build_studies_table_unit.py`
+- Added unit test for PubChem trials export script:
+  - `tests/test_export_pubchem_trials_dataset_unit.py`
 
 ## v0.2.0 - 2026-02-09
 

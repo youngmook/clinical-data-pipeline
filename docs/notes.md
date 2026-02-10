@@ -4,9 +4,9 @@ This file is a practical handover for continuing work quickly.
 
 ## Current Direction
 
-- Keep **service-first architecture** for pipeline orchestration.
-- Keep PubChem / CTGov clients independent.
-- Use script files as thin wrappers (argument parsing + logging).
+- Keep **service-first architecture** for CTGov step1-3 orchestration.
+- Keep PubChem / CTGov clients independent, with provider-specific PubChem fallback modules.
+- Use script files as thin wrappers (argument parsing + logging), and dedicated export/build scripts for static table publishing.
 
 ## What Was Completed
 
@@ -26,6 +26,21 @@ This file is a practical handover for continuing work quickly.
      - `scripts/collect_ctgov_docs.py`
 5. Streaming collection behavior implemented for better visibility:
    - CID-by-CID mapping and immediate CTGov fetch per CID.
+6. Added CTGov automation with snapshot persistence:
+   - `.github/workflows/ctgov_collect.yml`
+   - updates `data/ctgov/studies.jsonl`, `data/ctgov/history/studies_*.jsonl`, `data/ctgov/collection_state.json`
+7. Added PubChem trials export + static table publishing workflow:
+   - `.github/workflows/pubchem_table_pages.yml`
+   - export script: `scripts/export_pubchem_trials_dataset.py`
+   - table builder: `scripts/build_pubchem_trials_table.py`
+8. Added client-side table UX improvements for CTGov page:
+   - pagination (`25/50/100`)
+   - filtered CSV/JSON export buttons
+   - NCT ID linked to CTGov, plus PubChem link per row
+9. Refactored PubChem fallback internals:
+   - legacy single-file fallback removed
+   - provider-based modules under `src/clinical_data_analyzer/pubchem/web_fallback/`
+   - normalized union schema uses `id`/`date` and `id_url`
 
 ## Key Files to Read First
 
@@ -34,6 +49,11 @@ This file is a practical handover for continuing work quickly.
 - `src/clinical_data_analyzer/pubchem/pug_view.py`
 - `src/clinical_data_analyzer/pubchem/web_fallback/`
 - `scripts/collect_ctgov_docs.py`
+- `scripts/update_studies_history.py`
+- `scripts/export_pubchem_trials_dataset.py`
+- `scripts/build_pubchem_trials_table.py`
+- `.github/workflows/ctgov_collect.yml`
+- `.github/workflows/pubchem_table_pages.yml`
 
 ## Output Contract (Step1-3 Collector)
 
@@ -85,6 +105,7 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
 
 ## Next Practical Improvements
 
-1. Align Korean docs (`README.ko.md`, `docs/*.ko.md`) with the latest streaming/service changes.
-2. Add tests for `collect_ctgov_docs_service.py` (service-level unit tests with stubs/mocks).
-3. Optionally add configurable fixed interval (`sleep`) between API calls when users request throttling.
+1. Add service-level unit tests for `collect_ctgov_docs_service.py` (stubs/mocks, resume edge cases).
+2. Align all Korean docs (`README.ko.md`, `docs/*.ko.md`) with latest PubChem table workflow details.
+3. Add optional throttling controls (`sleep`/rate policy) for long-running scheduled collection jobs.
+4. Consider split Pages routing (CTGov table vs PubChem table) with separate paths to avoid deployment overlap.
