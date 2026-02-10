@@ -121,6 +121,15 @@ def _html_datatables(title: str, json_filename: str) -> str:
     .card {{ background: #fff; border: 1px solid #d1d5db; border-radius: 12px; padding: 16px; }}
     h1 {{ margin: 0 0 6px 0; font-size: 1.1rem; }}
     .meta {{ margin: 0 0 12px 0; color: #6b7280; font-size: 0.9rem; }}
+    .toolbar {{ display: flex; align-items: center; gap: 8px; margin: 0 0 12px 0; }}
+    .toolbar button {{
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      padding: 6px 10px;
+      cursor: pointer;
+    }}
+    .toolbar span {{ color: #6b7280; font-size: 0.85rem; }}
     td.img-cell img {{ width: 72px; height: 72px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }}
     table.dataTable td {{ vertical-align: top; }}
   </style>
@@ -130,6 +139,11 @@ def _html_datatables(title: str, json_filename: str) -> str:
     <div class="card">
       <h1>{title} (DataTables)</h1>
       <p class="meta">Generated from <code>{json_filename}</code></p>
+      <div class="toolbar">
+        <button id="exportCsvBtn">Export CSV</button>
+        <button id="exportJsonBtn">Export JSON</button>
+        <span>Exports currently filtered rows</span>
+      </div>
       <table id="tbl" class="display" style="width:100%">
         <thead>
           <tr>
@@ -145,10 +159,66 @@ def _html_datatables(title: str, json_filename: str) -> str:
     const DATA_JSON = "./{json_filename}";
     const esc = (s) => String(s ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const attr = (s) => String(s ?? "").replaceAll('"', "&quot;");
+    const DOWNLOAD_FIELDS = ["cid", "collection", "collection_code", "id", "id_url", "date", "phase", "status", "title", "smiles", "inchikey", "iupac_name"];
+    const CSV_EXCLUDE_FIELDS = new Set(["image_base64"]);
+
+    function downloadText(filename, text, mime) {{
+      const blob = new Blob([text], {{ type: mime }});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }}
+
+    function normalizeExportRows(rows) {{
+      return rows.map((r) => {{
+        const out = {{}};
+        for (const k of DOWNLOAD_FIELDS) {{
+          if (Object.prototype.hasOwnProperty.call(r, k)) {{
+            out[k] = r[k];
+          }}
+        }}
+        for (const k of Object.keys(r)) {{
+          if (CSV_EXCLUDE_FIELDS.has(k) || Object.prototype.hasOwnProperty.call(out, k)) {{
+            continue;
+          }}
+          out[k] = r[k];
+        }}
+        return out;
+      }});
+    }}
+
+    function toCsv(rows) {{
+      if (!rows.length) return "";
+      const headerSet = new Set();
+      for (const r of rows) {{
+        for (const k of Object.keys(r)) {{
+          headerSet.add(k);
+        }}
+      }}
+      const headers = Array.from(headerSet);
+      const escCsv = (v) => {{
+        const s = String(v ?? "");
+        if (s.includes(",") || s.includes('"') || s.includes("\\n")) {{
+          return '"' + s.replaceAll('"', '""') + '"';
+        }}
+        return s;
+      }};
+      const lines = [headers.join(",")];
+      for (const r of rows) {{
+        lines.push(headers.map((h) => escCsv(r[h])).join(","));
+      }}
+      return lines.join("\\n") + "\\n";
+    }}
+
     fetch(DATA_JSON)
       .then(r => r.json())
       .then(rows => {{
-        $("#tbl").DataTable({{
+        const dt = $("#tbl").DataTable({{
           data: rows,
           pageLength: 25,
           columns: [
@@ -170,6 +240,20 @@ def _html_datatables(title: str, json_filename: str) -> str:
             {{ data: "smiles" }}
           ],
           order: [[1, "asc"]],
+        }});
+
+        const exportFilteredRows = () => {{
+          const filtered = dt.rows({{ search: "applied" }}).data().toArray();
+          return normalizeExportRows(filtered);
+        }};
+
+        document.getElementById("exportCsvBtn").addEventListener("click", () => {{
+          const outRows = exportFilteredRows();
+          downloadText("clinical_trials_list_filtered.csv", toCsv(outRows), "text/csv;charset=utf-8");
+        }});
+        document.getElementById("exportJsonBtn").addEventListener("click", () => {{
+          const outRows = exportFilteredRows();
+          downloadText("clinical_trials_list_filtered.json", JSON.stringify(outRows, null, 2) + "\\n", "application/json;charset=utf-8");
         }});
       }})
       .catch(err => {{
@@ -195,6 +279,21 @@ def _html_tabulator(title: str, json_filename: str) -> str:
     .card {{ background: #fff; border: 1px solid #d1d5db; border-radius: 12px; padding: 16px; }}
     h1 {{ margin: 0 0 6px 0; font-size: 1.1rem; }}
     .meta {{ margin: 0 0 12px 0; color: #6b7280; font-size: 0.9rem; }}
+    .toolbar {{ display: flex; align-items: center; gap: 8px; margin: 0 0 12px 0; }}
+    .toolbar input[type=search] {{
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 8px 10px;
+      min-width: 300px;
+    }}
+    .toolbar button {{
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      padding: 6px 10px;
+      cursor: pointer;
+    }}
+    .toolbar span {{ color: #6b7280; font-size: 0.85rem; }}
     #tbl {{ border: 1px solid #d1d5db; border-radius: 8px; }}
     .img-cell img {{ width: 72px; height: 72px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }}
   </style>
@@ -204,6 +303,13 @@ def _html_tabulator(title: str, json_filename: str) -> str:
     <div class="card">
       <h1>{title} (Tabulator)</h1>
       <p class="meta">Generated from <code>{json_filename}</code></p>
+      <div class="toolbar">
+        <input id="q" type="search" placeholder="Search by CID, ID, title, phase, status, collection..." />
+        <button id="clearFilterBtn">Clear</button>
+        <button id="exportCsvBtn">Export CSV</button>
+        <button id="exportJsonBtn">Export JSON</button>
+        <span>Exports currently filtered rows</span>
+      </div>
       <div id="tbl"></div>
     </div>
   </div>
@@ -212,10 +318,66 @@ def _html_tabulator(title: str, json_filename: str) -> str:
     const DATA_JSON = "./{json_filename}";
     const esc = (s) => String(s ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     const attr = (s) => String(s ?? "").replaceAll('"', "&quot;");
+    const DOWNLOAD_FIELDS = ["cid", "collection", "collection_code", "id", "id_url", "date", "phase", "status", "title", "smiles", "inchikey", "iupac_name"];
+    const CSV_EXCLUDE_FIELDS = new Set(["image_base64"]);
+
+    function downloadText(filename, text, mime) {{
+      const blob = new Blob([text], {{ type: mime }});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }}
+
+    function normalizeExportRows(rows) {{
+      return rows.map((r) => {{
+        const out = {{}};
+        for (const k of DOWNLOAD_FIELDS) {{
+          if (Object.prototype.hasOwnProperty.call(r, k)) {{
+            out[k] = r[k];
+          }}
+        }}
+        for (const k of Object.keys(r)) {{
+          if (CSV_EXCLUDE_FIELDS.has(k) || Object.prototype.hasOwnProperty.call(out, k)) {{
+            continue;
+          }}
+          out[k] = r[k];
+        }}
+        return out;
+      }});
+    }}
+
+    function toCsv(rows) {{
+      if (!rows.length) return "";
+      const headerSet = new Set();
+      for (const r of rows) {{
+        for (const k of Object.keys(r)) {{
+          headerSet.add(k);
+        }}
+      }}
+      const headers = Array.from(headerSet);
+      const escCsv = (v) => {{
+        const s = String(v ?? "");
+        if (s.includes(",") || s.includes('"') || s.includes("\\n")) {{
+          return '"' + s.replaceAll('"', '""') + '"';
+        }}
+        return s;
+      }};
+      const lines = [headers.join(",")];
+      for (const r of rows) {{
+        lines.push(headers.map((h) => escCsv(r[h])).join(","));
+      }}
+      return lines.join("\\n") + "\\n";
+    }}
+
     fetch(DATA_JSON)
       .then(r => r.json())
       .then(rows => {{
-        new Tabulator("#tbl", {{
+        const table = new Tabulator("#tbl", {{
           data: rows,
           layout: "fitDataStretch",
           height: "72vh",
@@ -246,6 +408,35 @@ def _html_tabulator(title: str, json_filename: str) -> str:
             {{title: "Title", field: "title", width: 420}},
             {{title: "SMILES", field: "smiles", width: 280}},
           ],
+        }});
+
+        const searchInput = document.getElementById("q");
+        const clearFilterBtn = document.getElementById("clearFilterBtn");
+        const exportCsvBtn = document.getElementById("exportCsvBtn");
+        const exportJsonBtn = document.getElementById("exportJsonBtn");
+
+        const filterFields = ["cid", "collection", "collection_code", "id", "date", "phase", "status", "title", "smiles"];
+        searchInput.addEventListener("input", () => {{
+          const q = searchInput.value.trim().toLowerCase();
+          if (!q) {{
+            table.clearFilter(true);
+            return;
+          }}
+          table.setFilter((data) => filterFields.some((k) => String(data[k] ?? "").toLowerCase().includes(q)));
+        }});
+        clearFilterBtn.addEventListener("click", () => {{
+          searchInput.value = "";
+          table.clearFilter(true);
+        }});
+
+        const exportFilteredRows = () => normalizeExportRows(table.getData("active"));
+        exportCsvBtn.addEventListener("click", () => {{
+          const outRows = exportFilteredRows();
+          downloadText("clinical_trials_list_filtered.csv", toCsv(outRows), "text/csv;charset=utf-8");
+        }});
+        exportJsonBtn.addEventListener("click", () => {{
+          const outRows = exportFilteredRows();
+          downloadText("clinical_trials_list_filtered.json", JSON.stringify(outRows, null, 2) + "\\n", "application/json;charset=utf-8");
         }});
       }})
       .catch(err => {{
@@ -312,4 +503,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
