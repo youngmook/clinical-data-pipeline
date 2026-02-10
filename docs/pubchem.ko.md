@@ -78,6 +78,8 @@ source 경로까지 함께 가져오는 메서드:
 이 클라이언트는 특정 CID에서 REST 응답이 불완전할 때 fallback 레이어로 사용합니다.
 
 정규화된 trial row 공통 스키마:
+- `collection` (사람이 읽기 쉬운 원천 이름)
+- `collection_code` (원본 SDQ collection 코드)
 - `id` (`ctid` 또는 `eudractnumber`)
 - `date` (`date` 또는 `updatedate`를 `date`로 통합)
 - `title`

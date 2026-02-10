@@ -78,6 +78,8 @@ Methods:
 This is intended as a fallback layer when REST responses are incomplete for a CID.
 
 Normalized trial rows use a common schema across collections:
+- collection (human-readable source name)
+- collection_code (raw SDQ collection code)
 - id (ctid or eudractnumber)
 - date (date or updatedate normalized to date)
 - title

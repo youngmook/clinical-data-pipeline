@@ -13,6 +13,12 @@ SDQ_COLLECTION_CLINICALTRIALS = "clinicaltrials"
 SDQ_COLLECTION_EU_REGISTER = "clinicaltrials_eu"
 SDQ_COLLECTION_JAPAN_NIPH = "clinicaltrials_jp"
 
+SDQ_COLLECTION_LABELS = {
+    SDQ_COLLECTION_CLINICALTRIALS: "ClinicalTrials.gov",
+    SDQ_COLLECTION_EU_REGISTER: "EU Clinical Trials Register",
+    SDQ_COLLECTION_JAPAN_NIPH: "NIPH Clinical Trials Search of Japan",
+}
+
 
 class PubChemWebFallbackError(RuntimeError):
     pass
@@ -69,7 +75,8 @@ def normalize_sdq_trial_row(row: Dict[str, Any], *, collection: str) -> Dict[str
     link_val = row.get("link")
 
     return {
-        "collection": collection,
+        "collection": SDQ_COLLECTION_LABELS.get(collection, collection),
+        "collection_code": collection,
         "id": trial_id,
         "title": row.get("title"),
         "phase": row.get("phase"),
