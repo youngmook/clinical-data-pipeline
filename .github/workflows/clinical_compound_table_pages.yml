@@ -6,7 +6,7 @@ on:
       table_mode:
         description: "HTML table mode"
         required: false
-        default: "datatables"
+        default: "tabulator"
   workflow_run:
     workflows: ["collect-clinical-trials-full", "collect-clinical-trials-incremental"]
     types: [completed]
@@ -130,7 +130,7 @@ jobs:
 
       - name: Build table HTML
         env:
-          TABLE_MODE: ${{ github.event.inputs.table_mode || 'datatables' }}
+          TABLE_MODE: ${{ github.event.inputs.table_mode || 'tabulator' }}
         run: |
           python scripts/build_pubchem_trials_table.py \
             --in-json out/pubchem_trials_dataset_gh/trials.json \

@@ -496,6 +496,22 @@ python -m pip install \
   clinpipe
 ```
 
+### Clinical Compound Table Pages (Tabulator Default)
+
+The repository also includes a dedicated Pages workflow for the latest PubChem clinical trial snapshot:
+
+- `.github/workflows/clinical_compound_table_pages.yml`
+
+What it does on each run:
+
+1. read the latest snapshot files from `snapshots/clinical_trials/latest/`
+2. build static HTML table (`scripts/build_pubchem_trials_table.py`)
+3. publish `index.html`, `trials.json`, `trials.csv`, `summary.json`, `cids.txt` to GitHub Pages
+
+Manual run (Actions UI) input:
+
+- `table_mode` (default: `tabulator`, also supports `vanilla`, `datatables`)
+
 ### Download clinical-trial–related CIDs (HNID)
 
 Download PubChem compound IDs associated with the *Clinical Trials* classification node:
