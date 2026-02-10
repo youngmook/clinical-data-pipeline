@@ -65,7 +65,10 @@ Module: src/clinical_data_analyzer/pubchem/web_fallback.py
 
 Methods:
 
+- get_sdq_payload(cid, collection="clinicaltrials", limit=200, order=None) -> Dict
 - get_clinicaltrials_sdq_payload(cid) -> Dict
+- get_eu_register_sdq_payload(cid) -> Dict
+- get_japan_niph_sdq_payload(cid) -> Dict
 - get_compound_page_html(cid) -> str
 - nct_ids_for_cid_with_source(cid) -> (List[str], str)
 - nct_ids_for_cid(cid) -> List[str]
