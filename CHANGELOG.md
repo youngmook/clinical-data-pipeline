@@ -104,6 +104,22 @@ All notable changes to this project are documented in this file.
   - added history retention option (`retention_days`, default 365)
   - changed `contents` permission to `write` for automated snapshot commits
 
+## v0.3.1 - 2026-02-10
+
+### Added
+
+- Added filtered export controls for PubChem trials table UIs:
+  - DataTables mode: `Export CSV`, `Export JSON`
+  - Tabulator mode: `Export CSV`, `Export JSON`
+- Added unit test for PubChem table HTML builder:
+  - `tests/test_build_pubchem_trials_table_unit.py`
+
+### Changed
+
+- Updated download filenames for filtered exports to:
+  - `clinical_trials_list_filtered.csv`
+  - `clinical_trials_list_filtered.json`
+
 ## v0.3.0 - 2026-02-10
 
 ### Added
