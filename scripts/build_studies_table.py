@@ -47,8 +47,9 @@ def _write_html(path: Path, title: str) -> None:
     .head {{ padding: 16px 18px; border-bottom: 1px solid var(--line); }}
     h1 {{ margin: 0; font-size: 1.1rem; }}
     .meta {{ margin-top: 6px; font-size: 0.9rem; color: var(--muted); }}
-    .controls {{ display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }}
+    .controls {{ display: grid; grid-template-columns: 1fr auto auto; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }}
     input[type=search] {{ width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }}
+    select {{ border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: white; }}
     .badge {{ align-self: center; color: var(--accent); font-weight: 600; font-size: 0.9rem; }}
     .table-wrap {{ overflow: auto; max-height: 70vh; }}
     table {{ width: 100%; border-collapse: collapse; font-size: 0.88rem; }}
@@ -57,6 +58,10 @@ def _write_html(path: Path, title: str) -> None:
     tbody tr:hover {{ background: #f8fbff; }}
     a {{ color: #0369a1; text-decoration: none; }}
     a:hover {{ text-decoration: underline; }}
+    .pager {{ display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--line); }}
+    .pager .left, .pager .right {{ display: flex; align-items: center; gap: 8px; }}
+    button {{ border: 1px solid var(--line); background: white; border-radius: 8px; padding: 6px 10px; cursor: pointer; }}
+    button:disabled {{ opacity: 0.5; cursor: not-allowed; }}
   </style>
 </head>
 <body>
@@ -68,6 +73,11 @@ def _write_html(path: Path, title: str) -> None:
       </div>
       <div class=\"controls\">
         <input id=\"q\" type=\"search\" placeholder=\"Search by CID, NCT ID, title, phase, condition...\" />
+        <select id=\"pageSize\">
+          <option value=\"25\">25 / page</option>
+          <option value=\"50\" selected>50 / page</option>
+          <option value=\"100\">100 / page</option>
+        </select>
         <div id=\"count\" class=\"badge\">0 rows</div>
       </div>
       <div class=\"table-wrap\">
@@ -89,6 +99,15 @@ def _write_html(path: Path, title: str) -> None:
           <tbody id=\"tbody\"></tbody>
         </table>
       </div>
+      <div class=\"pager\">
+        <div class=\"left\">
+          <button id=\"prevBtn\">Prev</button>
+          <button id=\"nextBtn\">Next</button>
+        </div>
+        <div class=\"right\">
+          <span id=\"pageInfo\">Page 1 / 1</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -97,11 +116,14 @@ def _write_html(path: Path, title: str) -> None:
 
     function renderRows(rows) {{
       const tbody = document.getElementById('tbody');
-      const count = document.getElementById('count');
       tbody.innerHTML = rows.map(r => `
         <tr>
           <td>${{escapeHtml(r.cid)}}</td>
-          <td>${{escapeHtml(r.nct_id)}}</td>
+          <td>
+            <a href="${{escapeHtml(r.ctgov_url || r.source_url)}}" target="_blank" rel="noreferrer">
+              ${{escapeHtml(r.nct_id)}}
+            </a>
+          </td>
           <td>${{escapeHtml(r.phase)}}</td>
           <td>${{escapeHtml(r.overall_status)}}</td>
           <td>${{escapeHtml(r.title)}}</td>
@@ -110,35 +132,73 @@ def _write_html(path: Path, title: str) -> None:
           <td>${{escapeHtml(r.targets)}}</td>
           <td>${{escapeHtml(r.last_update_date)}}</td>
           <td>
-            <a href="${{escapeHtml(r.ctgov_url || r.source_url)}}" target="_blank" rel="noreferrer">ctgov</a>
-            |
             <a href="${{escapeHtml(r.pubchem_url || ('https://pubchem.ncbi.nlm.nih.gov/compound/' + r.cid))}}" target="_blank" rel="noreferrer">pubchem</a>
           </td>
         </tr>
       `).join('');
-      count.textContent = `${{rows.length}} rows`;
     }}
 
     async function main() {{
       const rows = await fetch('./studies.json').then(r => r.json());
       const q = document.getElementById('q');
+      const pageSizeEl = document.getElementById('pageSize');
+      const count = document.getElementById('count');
+      const pageInfo = document.getElementById('pageInfo');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+
+      let filteredRows = rows.slice();
+      let page = 1;
+      let pageSize = Number(pageSizeEl.value || 50);
+
       const hay = rows.map(r => [
         r.cid, r.nct_id, r.phase, r.overall_status, r.title,
         r.conditions, r.interventions, r.targets, r.last_update_date
       ].join(' ').toLowerCase());
 
-      function apply() {{
-        const k = q.value.trim().toLowerCase();
-        if (!k) {{
-          renderRows(rows);
-          return;
-        }}
-        const filtered = rows.filter((_, i) => hay[i].includes(k));
-        renderRows(filtered);
+      function renderPage() {{
+        const totalRows = filteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+        if (page > totalPages) page = totalPages;
+        if (page < 1) page = 1;
+
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize;
+        renderRows(filteredRows.slice(start, end));
+
+        count.textContent = `${{totalRows}} rows`;
+        pageInfo.textContent = `Page ${{page}} / ${{totalPages}}`;
+        prevBtn.disabled = page <= 1;
+        nextBtn.disabled = page >= totalPages;
       }}
 
-      q.addEventListener('input', apply);
-      renderRows(rows);
+      function applyFilter() {{
+        const k = q.value.trim().toLowerCase();
+        if (!k) {{
+          filteredRows = rows.slice();
+        }} else {{
+          filteredRows = rows.filter((_, i) => hay[i].includes(k));
+        }}
+        page = 1;
+        renderPage();
+      }}
+
+      q.addEventListener('input', applyFilter);
+      pageSizeEl.addEventListener('change', () => {{
+        pageSize = Number(pageSizeEl.value || 50);
+        page = 1;
+        renderPage();
+      }});
+      prevBtn.addEventListener('click', () => {{
+        page -= 1;
+        renderPage();
+      }});
+      nextBtn.addEventListener('click', () => {{
+        page += 1;
+        renderPage();
+      }});
+
+      applyFilter();
     }}
 
     main();

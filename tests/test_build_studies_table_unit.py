@@ -88,4 +88,5 @@ def test_build_studies_table_unit(tmp_path: Path):
     html = out_html.read_text(encoding="utf-8")
     assert "Unit Test Table" in html
     assert "studies.json" in html
+    assert "ctgov_url || r.source_url" in html
     assert "pubchem" in html
