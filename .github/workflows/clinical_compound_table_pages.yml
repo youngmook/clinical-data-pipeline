@@ -12,13 +12,13 @@ on:
         required: false
         default: ""
       limit_cids:
-        description: "Limit CIDs for this run (empty = all)"
+        description: "Limit CIDs for this run (empty = all, recommended for production)"
         required: false
-        default: "100"
+        default: ""
       limit_per_collection:
         description: "Max rows per collection per CID"
         required: false
-        default: "20"
+        default: "200"
       table_mode:
         description: "HTML table mode"
         required: false
@@ -82,7 +82,7 @@ jobs:
             --in-json out/pubchem_trials_dataset_gh/trials.json \
             --mode "${{ inputs.table_mode }}" \
             --out-html out/pubchem_trials_dataset_gh/index.html \
-            --title "PubChem Clinical Trials Table"
+            --title "Clinical Trials Table"
 
       - name: Prepare Pages artifact
         run: |
