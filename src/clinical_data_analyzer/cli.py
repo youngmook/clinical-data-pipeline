@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Iterable, List, Optional
 
@@ -48,7 +50,14 @@ def _add_legacy_args(p: argparse.ArgumentParser) -> None:
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(prog="clinical-data-analyzer")
+    invoked_as = Path(sys.argv[0]).name
+    prog_name = "clinpipe" if invoked_as in ("clinpipe", "clinical-data-analyzer") else invoked_as
+
+    # Keep legacy alias working while guiding users to the shorter command.
+    if invoked_as == "clinical-data-analyzer" and os.getenv("CLINPIPE_HIDE_LEGACY_NOTICE") != "1":
+        print("[notice] `clinical-data-analyzer` is a legacy alias. Prefer `clinpipe`.", file=sys.stderr)
+
+    p = argparse.ArgumentParser(prog=prog_name)
     sub = p.add_subparsers(dest="command")
 
     # Legacy single-compound dataset build (default when no subcommand)

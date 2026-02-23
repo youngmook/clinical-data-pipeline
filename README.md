@@ -322,8 +322,10 @@ without writing Python code.
 ### Show help
 
 ```bash
-clinical-data-analyzer --help
+clinpipe --help
 ```
+
+Legacy alias (still supported): `clinical-data-analyzer`
 
 ## Script usage (MVP)
 
@@ -452,7 +454,7 @@ python scripts/merge_pubchem_trials_shards.py \
 Download PubChem compound IDs associated with the *Clinical Trials* classification node:
 
 ```bash
-clinical-data-analyzer hnid-cids \
+clinpipe hnid-cids \
   --hnid 1856916 \
   --out out_hnid/clinical_trials_cids.txt
 ```
@@ -468,7 +470,7 @@ This uses the official PubChem Classification Nodes API:
 Run a small end-to-end collection for a quick sanity check:
 
 ```bash
-clinical-data-analyzer collect-ctgov \
+clinpipe collect-ctgov \
   --hnid 1856916 \
   --limit 10 \
   --out out_ctgov

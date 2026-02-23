@@ -1,6 +1,6 @@
 [project]
-name = "clinical-data-analyzer"
-version = "0.5.0"
+name = "clinpipe"
+version = "0.5.1"
 description = "Clinical data pipeline integrating PubChem and ClinicalTrials.gov"
 requires-python = ">=3.9"
 dependencies = [
@@ -37,3 +37,7 @@ dev = [
   "pytest>=7.0",
   "ruff>=0.1"
 ]
+
+[project.scripts]
+clinpipe = "clinical_data_analyzer.cli:main"
+clinical-data-analyzer = "clinical_data_analyzer.cli:main"

@@ -197,8 +197,10 @@ pip install -e ".[dev]"
 ### 도움말
 
 ```bash
-clinical-data-analyzer --help
+clinpipe --help
 ```
+
+호환 alias(`clinical-data-analyzer`)도 계속 지원합니다.
 
 ## 스크립트 사용법 (MVP)
 
@@ -311,7 +313,7 @@ python scripts/merge_pubchem_trials_shards.py \
 ### 임상시험 관련 CID 다운로드 (HNID)
 
 ```bash
-clinical-data-analyzer hnid-cids \
+clinpipe hnid-cids \
   --hnid 1856916 \
   --out out_hnid/clinical_trials_cids.txt
 ```
@@ -319,7 +321,7 @@ clinical-data-analyzer hnid-cids \
 ### 엔드투엔드 예시: HNID → CID → ClinicalTrials.gov 문서
 
 ```bash
-clinical-data-analyzer collect-ctgov \
+clinpipe collect-ctgov \
   --hnid 1856916 \
   --limit 10 \
   --out out_ctgov

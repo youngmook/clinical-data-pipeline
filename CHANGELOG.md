@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## v0.5.1 - 2026-02-23
+
+### Changed
+
+- Renamed package distribution to `clinpipe` in `pyproject.toml`.
+- Added dual CLI entry points:
+  - `clinpipe` (primary)
+  - `clinical-data-analyzer` (legacy alias)
+- Updated CLI program name/help references to prefer `clinpipe`.
+- Added runtime notice for legacy alias usage:
+  - can be suppressed with `CLINPIPE_HIDE_LEGACY_NOTICE=1`
+- Updated README/README.ko examples to use `clinpipe`.
+
 ## v0.5.0 - 2026-02-23
 
 ### Added
