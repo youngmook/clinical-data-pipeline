@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## v0.5.0 - 2026-02-23
+
+### Added
+
+- Added CID shard options to PubChem trials exporter:
+  - `--cid-offset`
+  - `--cid-count`
+- Added shard merge script:
+  - `scripts/merge_pubchem_trials_shards.py`
+  - merges `trials.jsonl/json` across shard output dirs into one dataset
+- Added unit test for shard merge behavior:
+  - `tests/test_merge_pubchem_trials_shards_unit.py`
+- Added unit test for shard option behavior in export script:
+  - `tests/test_export_pubchem_trials_dataset_unit.py::test_export_pubchem_trials_dataset_shard_options_unit`
+
 ## v0.4.0 - 2026-02-23
 
 ### Added

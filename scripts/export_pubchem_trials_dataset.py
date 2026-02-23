@@ -141,6 +141,8 @@ def main() -> int:
     p.add_argument("--hnid", type=int, default=1856916, help="PubChem HNID (default: 1856916)")
     p.add_argument("--extra-hnids", default=None, help="Comma-separated extra HNIDs")
     p.add_argument("--limit-cids", type=int, default=None, help="Limit number of CIDs for testing")
+    p.add_argument("--cid-offset", type=int, default=0, help="Start index in deduped CID list (for shard runs)")
+    p.add_argument("--cid-count", type=int, default=None, help="Number of CIDs to process from offset")
     p.add_argument("--out-dir", default="out/pubchem_trials_dataset", help="Output directory")
     p.add_argument(
         "--collections",
@@ -154,6 +156,12 @@ def main() -> int:
     p.add_argument("--progress-every", type=int, default=50, help="Progress print interval")
     p.add_argument("--show-progress", action="store_true", help="Print per-CID progress logs")
     args = p.parse_args()
+    if args.cid_offset < 0:
+        raise ValueError("--cid-offset must be >= 0")
+    if args.cid_count is not None and args.cid_count <= 0:
+        raise ValueError("--cid-count must be > 0")
+    if args.cid_count is not None and args.limit_cids is not None:
+        raise ValueError("Use either --cid-count or --limit-cids, not both")
 
     out_dir = Path(args.out_dir)
     _ensure_dir(out_dir)
@@ -175,8 +183,14 @@ def main() -> int:
     for hnid in hnids:
         cids.extend(class_client.get_cids(hnid, fmt="TXT"))
     cids = _dedupe(cids)
+    total_cids_before_slice = len(cids)
 
-    if args.limit_cids is not None:
+    if args.cid_offset:
+        cids = cids[args.cid_offset :]
+
+    if args.cid_count is not None:
+        cids = cids[: args.cid_count]
+    elif args.limit_cids is not None:
         cids = cids[: args.limit_cids]
 
     cids_txt.write_text("\n".join(str(c) for c in cids) + "\n", encoding="utf-8")
@@ -191,7 +205,9 @@ def main() -> int:
 
     print(
         f"[export] start hnids={hnids} collections={list(collections)} "
-        f"cids={len(cids)} resume={args.resume} skip_images={args.skip_images}"
+        f"cids={len(cids)} total_cids={total_cids_before_slice} "
+        f"offset={args.cid_offset} count={args.cid_count} "
+        f"resume={args.resume} skip_images={args.skip_images}"
     )
 
     total_rows = 0
@@ -330,6 +346,9 @@ def main() -> int:
     summary = {
         "hnids": hnids,
         "collections": list(collections),
+        "cid_offset": args.cid_offset,
+        "cid_count": args.cid_count,
+        "n_cids_total": total_cids_before_slice,
         "n_cids": len(cids),
         "n_rows": total_rows,
         "n_cids_with_trials": total_with_trials,

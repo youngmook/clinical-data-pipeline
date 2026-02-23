@@ -410,6 +410,31 @@ python scripts/update_pubchem_trials_history.py \
   --retention-days 365
 ```
 
+Shard collection and merge (recommended for large runs):
+
+```bash
+# shard 1 (first 500 CIDs)
+python scripts/export_pubchem_trials_dataset.py \
+  --hnid 1856916 \
+  --cid-offset 0 \
+  --cid-count 500 \
+  --resume \
+  --out-dir out/pubchem_trials_shards/s1
+
+# shard 2 (next 500 CIDs)
+python scripts/export_pubchem_trials_dataset.py \
+  --hnid 1856916 \
+  --cid-offset 500 \
+  --cid-count 500 \
+  --resume \
+  --out-dir out/pubchem_trials_shards/s2
+
+# merge shards
+python scripts/merge_pubchem_trials_shards.py \
+  --shard-dirs out/pubchem_trials_shards/s1,out/pubchem_trials_shards/s2 \
+  --out-dir out/pubchem_trials_merged
+```
+
 ### Download clinical-trial–related CIDs (HNID)
 
 Download PubChem compound IDs associated with the *Clinical Trials* classification node:
