@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- Updated CLI documentation to recommend `clinpipe` as the primary command:
+  - `docs/cli.md`
+  - `docs/cli.ko.md`
+- Added `pip` and `uv` install examples for `clinpipe` in CLI docs.
+
 ## v0.5.2 - 2026-02-23
 
 ### Changed
