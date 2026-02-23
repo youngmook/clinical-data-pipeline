@@ -278,6 +278,12 @@ out_ctgov/
 
 ---
 
+## 기여자
+
+- 강영묵 (Young-Mook Kang), 한국화학연구원 (Korea Research Institute of Chemical Technology, KRICT)
+
+---
+
 ## 라이선스
 
 MIT License

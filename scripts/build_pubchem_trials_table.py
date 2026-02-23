@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Young-Mook Kang, Magic AI Research Association
+# Copyright (c) 2026 Magic AI Research Association
 
 from __future__ import annotations
 

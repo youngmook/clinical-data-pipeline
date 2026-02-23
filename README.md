@@ -436,6 +436,12 @@ out_ctgov/
 
 ---
 
+## Contributors
+
+- Young-Mook Kang (Korea Research Institute of Chemical Technology, KRICT)
+
+---
+
 ## License
 
 MIT License
