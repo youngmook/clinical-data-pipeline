@@ -320,6 +320,15 @@ python scripts/merge_pubchem_trials_shards.py \
   - `repository=testpypi` -> `TEST_PYPI_API_TOKEN` 사용
   - `repository=pypi` -> `PYPI_API_TOKEN` 사용
 
+TestPyPI 설치 스모크 명령:
+
+```bash
+python -m pip install \
+  --index-url https://test.pypi.org/simple/ \
+  --extra-index-url https://pypi.org/simple \
+  clinpipe
+```
+
 ### 임상시험 관련 CID 다운로드 (HNID)
 
 ```bash

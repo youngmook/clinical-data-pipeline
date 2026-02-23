@@ -459,6 +459,15 @@ python scripts/merge_pubchem_trials_shards.py \
   - `repository=testpypi` uses `TEST_PYPI_API_TOKEN`
   - `repository=pypi` uses `PYPI_API_TOKEN`
 
+TestPyPI install smoke command:
+
+```bash
+python -m pip install \
+  --index-url https://test.pypi.org/simple/ \
+  --extra-index-url https://pypi.org/simple \
+  clinpipe
+```
+
 ### Download clinical-trial–related CIDs (HNID)
 
 Download PubChem compound IDs associated with the *Clinical Trials* classification node:

@@ -40,7 +40,11 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
-          python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+          python -m twine upload --verbose --repository-url https://test.pypi.org/legacy/ dist/* || {
+            echo "::error::Upload failed. Check token scope/secret and whether this version already exists."
+            echo "::notice::For local install from TestPyPI, use --extra-index-url https://pypi.org/simple for dependencies."
+            exit 1
+          }
 
       - name: Upload to PyPI
         if: ${{ github.event.inputs.repository == 'pypi' }}
@@ -48,4 +52,8 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          python -m twine upload dist/*
+          python -m twine upload --verbose dist/* || {
+            echo "::error::Upload failed. If file already exists, bump version (PyPI file reuse is not allowed)."
+            echo "::notice::Also verify PYPI_API_TOKEN scope and value."
+            exit 1
+          }

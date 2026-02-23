@@ -4,14 +4,16 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
-### Added
+## v0.5.2 - 2026-02-23
 
-- Added package validation CI workflow:
-  - `.github/workflows/package_ci.yml`
-  - runs focused tests, package build, and `twine check`
-- Added manual PyPI publishing workflow:
-  - `.github/workflows/publish_pypi.yml`
-  - supports `testpypi` and `pypi` targets via workflow input
+### Changed
+
+- Updated `.github/workflows/publish_pypi.yml`:
+  - added `twine upload --verbose` for better diagnostics
+  - added explicit failure hints for token/scope issues and "file already exists" reuse errors
+- Updated README/README.ko with correct TestPyPI install command using:
+  - `--index-url https://test.pypi.org/simple/`
+  - `--extra-index-url https://pypi.org/simple`
 
 ## v0.5.1 - 2026-02-23
 
