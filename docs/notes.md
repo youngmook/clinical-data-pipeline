@@ -30,7 +30,7 @@ This file is a practical handover for continuing work quickly.
    - `.github/workflows/ctgov_collect.yml`
    - updates `data/ctgov/studies.jsonl`, `data/ctgov/history/studies_*.jsonl`, `data/ctgov/collection_state.json`
 7. Added PubChem trials export + static table publishing workflow:
-   - `.github/workflows/pubchem_table_pages.yml`
+   - `.github/workflows/clinical_compound_table_pages.yml`
    - export script: `scripts/export_pubchem_trials_dataset.py`
    - table builder: `scripts/build_pubchem_trials_table.py`
 8. Added client-side table UX improvements for CTGov page:
@@ -53,7 +53,7 @@ This file is a practical handover for continuing work quickly.
 - `scripts/export_pubchem_trials_dataset.py`
 - `scripts/build_pubchem_trials_table.py`
 - `.github/workflows/ctgov_collect.yml`
-- `.github/workflows/pubchem_table_pages.yml`
+- `.github/workflows/clinical_compound_table_pages.yml`
 
 ## Output Contract (Step1-3 Collector)
 

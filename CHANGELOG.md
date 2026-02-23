@@ -9,7 +9,7 @@ All notable changes to this project are documented in this file.
 - Added scheduled GitHub Actions workflow for CTGov collection and table publishing:
   - `.github/workflows/ctgov_collect.yml`
 - Added dedicated GitHub Pages workflow for PubChem trials table publishing:
-  - `.github/workflows/pubchem_table_pages.yml`
+  - `.github/workflows/clinical_compound_table_pages.yml`
 - Added static table builder:
   - `scripts/build_studies_table.py` (CSV -> `docs/data/{studies.csv,studies.json,index.html}`)
 - Added studies history updater:

@@ -8,7 +8,7 @@ from current MVP/automation state to production-grade operation.
 - CTGov scheduled collection exists (`.github/workflows/ctgov_collect.yml`)
   - collects step1-3 pipeline outputs
   - maintains latest/history snapshots under `data/ctgov/`
-- PubChem table Pages workflow exists (`.github/workflows/pubchem_table_pages.yml`)
+- PubChem table Pages workflow exists (`.github/workflows/clinical_compound_table_pages.yml`)
   - exports PubChem trial rows and builds static table HTML
 - Table UX includes:
   - search
