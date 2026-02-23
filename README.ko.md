@@ -310,6 +310,16 @@ python scripts/merge_pubchem_trials_shards.py \
   --out-dir out/pubchem_trials_merged
 ```
 
+## 패키지 CI / 배포
+
+- CI 워크플로: `.github/workflows/package_ci.yml`
+  - 핵심 테스트 실행
+  - 패키지 빌드 (`python -m build`)
+  - 산출물 검증 (`twine check`)
+- 배포 워크플로: `.github/workflows/publish_pypi.yml` (수동 실행)
+  - `repository=testpypi` -> `TEST_PYPI_API_TOKEN` 사용
+  - `repository=pypi` -> `PYPI_API_TOKEN` 사용
+
 ### 임상시험 관련 CID 다운로드 (HNID)
 
 ```bash

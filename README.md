@@ -449,6 +449,16 @@ python scripts/merge_pubchem_trials_shards.py \
   --out-dir out/pubchem_trials_merged
 ```
 
+## Package CI and Publishing
+
+- CI workflow: `.github/workflows/package_ci.yml`
+  - runs focused tests
+  - builds package (`python -m build`)
+  - validates artifacts (`twine check`)
+- Publish workflow: `.github/workflows/publish_pypi.yml` (manual dispatch)
+  - `repository=testpypi` uses `TEST_PYPI_API_TOKEN`
+  - `repository=pypi` uses `PYPI_API_TOKEN`
+
 ### Download clinical-trial–related CIDs (HNID)
 
 Download PubChem compound IDs associated with the *Clinical Trials* classification node:

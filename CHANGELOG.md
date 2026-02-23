@@ -4,6 +4,15 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Added package validation CI workflow:
+  - `.github/workflows/package_ci.yml`
+  - runs focused tests, package build, and `twine check`
+- Added manual PyPI publishing workflow:
+  - `.github/workflows/publish_pypi.yml`
+  - supports `testpypi` and `pypi` targets via workflow input
+
 ## v0.5.1 - 2026-02-23
 
 ### Changed
