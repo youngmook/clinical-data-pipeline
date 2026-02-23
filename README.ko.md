@@ -255,6 +255,17 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
 
 - `shard_size` (기본 `500`, `0`이면 shard 비활성화)
 
+권장 실행 프리셋:
+
+- 스모크 점검:
+  - `limit_cids=200`
+  - `shard_size=200`
+  - `image_size=400x400`
+- 프로덕션:
+  - `limit_cids=` (비움)
+  - `shard_size=500` (기본값, 실행 시간에 맞춰 조정)
+  - `image_size=400x400`
+
 PubChem `trials.json` 스냅샷 저장 경로:
 
 - `snapshots/clinical_trials/latest/trials.json` (최신)

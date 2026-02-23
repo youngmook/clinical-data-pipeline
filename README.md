@@ -394,6 +394,17 @@ Manual run (Actions UI) supports optional:
 - `limit_ncts`
 - `shard_size` (`500` default, `0` disables shard mode)
 
+Recommended workflow presets:
+
+- smoke check:
+  - `limit_cids=200`
+  - `shard_size=200`
+  - `image_size=400x400`
+- production run:
+  - `limit_cids=` (empty)
+  - `shard_size=500` (start here; tune by runtime)
+  - `image_size=400x400`
+
 PubChem workflow snapshot outputs:
 
 - `snapshots/clinical_trials/latest/trials.json` (latest)
