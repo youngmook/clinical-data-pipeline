@@ -171,6 +171,24 @@ pip install clinpipe
 uv pip install clinpipe
 ```
 
+빠른 스모크 테스트:
+
+```bash
+clinpipe collect-ctgov \
+  --hnid 1856916 \
+  --limit 1 \
+  --out out_ctgov_smoke
+```
+
+예상 출력:
+
+```
+out_ctgov_smoke/
+├─ cid_nct_links.jsonl
+├─ compounds.jsonl
+└─ studies.jsonl
+```
+
 ```bash
 conda create -n clinical-pipeline python=3.11 -y
 conda activate clinical-pipeline

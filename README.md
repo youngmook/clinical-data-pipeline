@@ -26,15 +26,10 @@ pip install clinpipe
 Run a small smoke test (first CID + first NCT):
 
 ```bash
-PYTHONUNBUFFERED=1 python -u scripts/collect_ctgov_docs.py \
-  --hnid 3647573 \
-  --limit-cids 1 \
-  --limit-ncts 1 \
-  --folder-name ctgov_docs_first1 \
-  --out-root out \
-  --use-ctgov-fallback \
-  --show-progress \
-  --progress-every 1
+clinpipe collect-ctgov \
+  --hnid 1856916 \
+  --limit 1 \
+  --out out_ctgov_smoke
 ```
 
 ### Option B: uv (recommended if you prefer fast Python tooling)
@@ -48,25 +43,17 @@ uv pip install clinpipe
 Run the same smoke test:
 
 ```bash
-PYTHONUNBUFFERED=1 uv run python -u scripts/collect_ctgov_docs.py \
-  --hnid 3647573 \
-  --limit-cids 1 \
-  --limit-ncts 1 \
-  --folder-name ctgov_docs_first1 \
-  --out-root out \
-  --use-ctgov-fallback \
-  --show-progress \
-  --progress-every 1
+clinpipe collect-ctgov \
+  --hnid 1856916 \
+  --limit 1 \
+  --out out_ctgov_smoke
 ```
 
 Expected output files:
 
 ```
-out/ctgov_docs_first1/
-├─ cids.txt
-├─ cids.jsonl
+out_ctgov_smoke/
 ├─ cid_nct_links.jsonl
-├─ cid_nct_map.csv
 ├─ compounds.jsonl
 └─ studies.jsonl
 ```

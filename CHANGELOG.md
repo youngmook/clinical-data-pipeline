@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
   - `docs/cli.ko.md`
 - Added `pip` and `uv` install examples for `clinpipe` in CLI docs.
 - Updated README Quickstart install commands to use PyPI package install (`clinpipe`) for end users.
+- Updated README/README.ko smoke quickstart commands to use `clinpipe collect-ctgov` (user-facing path).
 
 ### Added
 
