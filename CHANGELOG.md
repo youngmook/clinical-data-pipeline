@@ -4,12 +4,27 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## v0.6.0 - 2026-02-23
+
 ### Changed
 
 - Updated CLI documentation to recommend `clinpipe` as the primary command:
   - `docs/cli.md`
   - `docs/cli.ko.md`
 - Added `pip` and `uv` install examples for `clinpipe` in CLI docs.
+
+### Added
+
+- Added import-compatible alias package `clinpipe`:
+  - `src/clinpipe/__init__.py`
+  - `src/clinpipe/cli.py`
+  - `src/clinpipe/ctgov/__init__.py`
+  - `src/clinpipe/pubchem/__init__.py`
+  - `src/clinpipe/pipeline/__init__.py`
+- Added unit test for alias package imports:
+  - `tests/test_clinpipe_alias_import_unit.py`
+- Updated package entrypoint:
+  - `clinpipe = \"clinpipe.cli:main\"`
 
 ## v0.5.2 - 2026-02-23
 

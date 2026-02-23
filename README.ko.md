@@ -201,6 +201,7 @@ clinpipe --help
 ```
 
 호환 alias(`clinical-data-analyzer`)도 계속 지원합니다.
+import alias 전환 경로: `clinpipe` (`clinical_data_analyzer`도 계속 지원)
 
 ## 스크립트 사용법 (MVP)
 

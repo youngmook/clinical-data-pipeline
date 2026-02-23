@@ -27,6 +27,10 @@
 - `clinical_data_analyzer.pubchem`: PubChem REST/PUG-View 및 fallback 클라이언트
 - `clinical_data_analyzer.pipeline`: 링커 및 데이터셋 생성 로직
 
+전환용 alias 패키지:
+
+- `clinpipe`: `clinical_data_analyzer`에서 점진적으로 옮길 수 있는 import 호환 alias
+
 ## 출력 (JSONL)
 
 일반적으로 생성되는 출력:

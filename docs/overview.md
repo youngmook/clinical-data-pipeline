@@ -27,6 +27,10 @@ Key packages:
 - clinical_data_analyzer.pubchem: PubChem REST and PUG-View clients
 - clinical_data_analyzer.pipeline: Linker and dataset build logic
 
+Transition alias package:
+
+- clinpipe: import-compatible alias for gradual migration from `clinical_data_analyzer`
+
 ## Outputs (JSONL)
 
 Typical outputs include:

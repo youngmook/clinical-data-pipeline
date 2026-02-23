@@ -326,6 +326,7 @@ clinpipe --help
 ```
 
 Legacy alias (still supported): `clinical-data-analyzer`
+Import alias (transition path): `clinpipe` (while `clinical_data_analyzer` remains supported)
 
 ## Script usage (MVP)
 
