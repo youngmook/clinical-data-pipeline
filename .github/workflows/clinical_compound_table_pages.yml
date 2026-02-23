@@ -95,28 +95,28 @@ jobs:
           set -euo pipefail
           python scripts/update_pubchem_trials_history.py \
             --trials-file out/pubchem_trials_dataset_gh/trials.json \
-            --state-file snapshots/pubchem_trials/collection_state.json \
-            --latest-file snapshots/pubchem_trials/latest/trials.json \
-            --history-dir snapshots/pubchem_trials/history \
+            --state-file snapshots/clinical_trials/collection_state.json \
+            --latest-file snapshots/clinical_trials/latest/trials.json \
+            --history-dir snapshots/clinical_trials/history \
             --retention-days "${RETENTION_DAYS}" \
             --changed-flag-path /tmp/pubchem_trials_changed.txt
 
       - name: Commit and push snapshots
         run: |
           set -euo pipefail
-          if git diff --quiet -- snapshots/pubchem_trials; then
+          if git diff --quiet -- snapshots/clinical_trials; then
             echo "No PubChem snapshot changes to commit."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add snapshots/pubchem_trials
+          git add snapshots/clinical_trials
 
           COLLECTED_AT=$(python - <<'PY'
           import json
           from pathlib import Path
-          state = json.loads(Path("snapshots/pubchem_trials/collection_state.json").read_text(encoding="utf-8"))
+          state = json.loads(Path("snapshots/clinical_trials/collection_state.json").read_text(encoding="utf-8"))
           print(state.get("last_collected_at", "unknown"))
           PY
           )

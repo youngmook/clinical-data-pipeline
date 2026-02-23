@@ -253,18 +253,18 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
 
 PubChem `trials.json` 스냅샷 저장 경로:
 
-- `snapshots/pubchem_trials/latest/trials.json` (최신)
-- `snapshots/pubchem_trials/history/trials_*.json` (수집 시각별 히스토리)
-- `snapshots/pubchem_trials/collection_state.json` (수집/변경 메타데이터)
+- `snapshots/clinical_trials/latest/trials.json` (최신)
+- `snapshots/clinical_trials/history/trials_*.json` (수집 시각별 히스토리)
+- `snapshots/clinical_trials/collection_state.json` (수집/변경 메타데이터, `source: pubchem` 포함)
 
 로컬에서 수집 후 스냅샷 갱신:
 
 ```bash
 python scripts/update_pubchem_trials_history.py \
   --trials-file out/pubchem_trials_dataset_check_v2/trials.json \
-  --state-file snapshots/pubchem_trials/collection_state.json \
-  --latest-file snapshots/pubchem_trials/latest/trials.json \
-  --history-dir snapshots/pubchem_trials/history \
+  --state-file snapshots/clinical_trials/collection_state.json \
+  --latest-file snapshots/clinical_trials/latest/trials.json \
+  --history-dir snapshots/clinical_trials/history \
   --retention-days 365
 ```
 

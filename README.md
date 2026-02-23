@@ -395,18 +395,18 @@ Manual run (Actions UI) supports optional:
 
 PubChem workflow snapshot outputs:
 
-- `snapshots/pubchem_trials/latest/trials.json` (latest)
-- `snapshots/pubchem_trials/history/trials_*.json` (timestamped history)
-- `snapshots/pubchem_trials/collection_state.json` (last collected/changed metadata)
+- `snapshots/clinical_trials/latest/trials.json` (latest)
+- `snapshots/clinical_trials/history/trials_*.json` (timestamped history)
+- `snapshots/clinical_trials/collection_state.json` (last collected/changed metadata, includes `source: pubchem`)
 
 Local snapshot update after collecting `trials.json`:
 
 ```bash
 python scripts/update_pubchem_trials_history.py \
   --trials-file out/pubchem_trials_dataset_check_v2/trials.json \
-  --state-file snapshots/pubchem_trials/collection_state.json \
-  --latest-file snapshots/pubchem_trials/latest/trials.json \
-  --history-dir snapshots/pubchem_trials/history \
+  --state-file snapshots/clinical_trials/collection_state.json \
+  --latest-file snapshots/clinical_trials/latest/trials.json \
+  --history-dir snapshots/clinical_trials/history \
   --retention-days 365
 ```
 

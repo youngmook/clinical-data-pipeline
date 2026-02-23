@@ -71,9 +71,9 @@ def _prune_old_snapshots(history_dir: Path, now_ts: datetime, retention_days: in
 def main() -> int:
     p = argparse.ArgumentParser(prog="update-pubchem-trials-history")
     p.add_argument("--trials-file", required=True, help="Newly collected trials.json path")
-    p.add_argument("--state-file", default="snapshots/pubchem_trials/collection_state.json")
-    p.add_argument("--latest-file", default="snapshots/pubchem_trials/latest/trials.json")
-    p.add_argument("--history-dir", default="snapshots/pubchem_trials/history")
+    p.add_argument("--state-file", default="snapshots/clinical_trials/collection_state.json")
+    p.add_argument("--latest-file", default="snapshots/clinical_trials/latest/trials.json")
+    p.add_argument("--history-dir", default="snapshots/clinical_trials/history")
     p.add_argument("--timestamp", default=None, help="UTC timestamp override (ISO8601)")
     p.add_argument(
         "--retention-days",
@@ -124,6 +124,7 @@ def main() -> int:
 
     state = {
         "schema_version": 1,
+        "source": "pubchem",
         "last_collected_at": ts,
         "last_changed_at": ts if changed else prev.get("last_changed_at", ts),
         "latest_file": str(latest_file),

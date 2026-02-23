@@ -69,6 +69,7 @@ def test_update_pubchem_trials_history_unit(tmp_path: Path):
     assert flag.read_text(encoding="utf-8").strip() == "false"
 
     state_obj = json.loads(state.read_text(encoding="utf-8"))
+    assert state_obj["source"] == "pubchem"
     assert state_obj["latest_row_count"] == 1
     assert state_obj["history_count"] == 2
 

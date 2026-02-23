@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "source": "pubchem",
+  "last_collected_at": "2026-02-23T03:22:53Z",
+  "last_changed_at": "2026-02-23T03:16:03Z",
+  "latest_file": "snapshots/clinical_trials/latest/trials.json",
+  "latest_checksum": "ef2cdd3a8fe6d6af5dd5e7f734b04e35f85566bb2400784e9ec9748b08130b71",
+  "latest_row_count": 6,
+  "history_count": 2,
+  "last_pruned_count": 0,
+  "latest_snapshot": "snapshots/clinical_trials/history/trials_20260223T032253Z.json"
+}
