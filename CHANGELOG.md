@@ -19,6 +19,12 @@ All notable changes to this project are documented in this file.
 - Added unit test for shard option behavior in export script:
   - `tests/test_export_pubchem_trials_dataset_unit.py::test_export_pubchem_trials_dataset_shard_options_unit`
 
+### Changed
+
+- Updated `.github/workflows/clinical_compound_table_pages.yml` to support shard collection mode:
+  - new input `shard_size` (default `500`, `0` disables shard mode)
+  - collects shard outputs and merges them via `scripts/merge_pubchem_trials_shards.py`
+
 ## v0.4.0 - 2026-02-23
 
 ### Added

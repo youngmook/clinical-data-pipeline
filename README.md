@@ -392,6 +392,7 @@ Manual run (Actions UI) supports optional:
 - `hnid`
 - `limit_cids`
 - `limit_ncts`
+- `shard_size` (`500` default, `0` disables shard mode)
 
 PubChem workflow snapshot outputs:
 

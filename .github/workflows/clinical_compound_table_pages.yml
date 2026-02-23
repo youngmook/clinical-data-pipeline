@@ -27,6 +27,10 @@ on:
         description: "PNG size for base64 images"
         required: false
         default: "400x400"
+      shard_size:
+        description: "CID shard size (0 = disable shard mode)"
+        required: false
+        default: "500"
       retention_days:
         description: "Delete history snapshots older than N days"
         required: false
@@ -67,26 +71,105 @@ jobs:
           LIMIT_CIDS: ${{ github.event.inputs.limit_cids || '' }}
           LIMIT_PER_COLLECTION: ${{ github.event.inputs.limit_per_collection || '200' }}
           IMAGE_SIZE: ${{ github.event.inputs.image_size || '400x400' }}
+          SHARD_SIZE: ${{ github.event.inputs.shard_size || '500' }}
         run: |
+          set -euo pipefail
           mkdir -p out/pubchem_trials_dataset_gh
           EXTRA_ARGS=""
           if [ -n "${EXTRA_HNIDS}" ]; then
             EXTRA_ARGS="--extra-hnids ${EXTRA_HNIDS}"
           fi
 
-          LIMIT_ARGS=""
-          if [ -n "${LIMIT_CIDS}" ]; then
-            LIMIT_ARGS="--limit-cids ${LIMIT_CIDS}"
-          fi
+          SHARD_SIZE_INT="${SHARD_SIZE:-0}"
+          if [ "${SHARD_SIZE_INT}" -gt 0 ]; then
+            echo "[workflow] shard mode enabled: shard_size=${SHARD_SIZE_INT}"
+            rm -rf out/pubchem_trials_shards
+            mkdir -p out/pubchem_trials_shards
 
-          python scripts/export_pubchem_trials_dataset.py \
-            --hnid "${HNID}" \
-            $EXTRA_ARGS \
-            $LIMIT_ARGS \
-            --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
-            --limit-per-collection "${LIMIT_PER_COLLECTION}" \
-            --image-size "${IMAGE_SIZE}" \
-            --out-dir out/pubchem_trials_dataset_gh
+            offset=0
+            shard_idx=1
+            processed=0
+            shard_dirs=""
+
+            while true; do
+              current_count="${SHARD_SIZE_INT}"
+              if [ -n "${LIMIT_CIDS}" ]; then
+                remaining=$((LIMIT_CIDS - processed))
+                if [ "${remaining}" -le 0 ]; then
+                  break
+                fi
+                if [ "${remaining}" -lt "${current_count}" ]; then
+                  current_count="${remaining}"
+                fi
+              fi
+
+              shard_dir="out/pubchem_trials_shards/s${shard_idx}"
+              mkdir -p "${shard_dir}"
+              echo "[workflow] collecting shard=${shard_idx} offset=${offset} count=${current_count}"
+
+              python scripts/export_pubchem_trials_dataset.py \
+                --hnid "${HNID}" \
+                $EXTRA_ARGS \
+                --cid-offset "${offset}" \
+                --cid-count "${current_count}" \
+                --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
+                --limit-per-collection "${LIMIT_PER_COLLECTION}" \
+                --image-size "${IMAGE_SIZE}" \
+                --out-dir "${shard_dir}"
+
+              n_cids=$(python - <<PY
+              import json
+              from pathlib import Path
+              p = Path("${shard_dir}") / "summary.json"
+              d = json.loads(p.read_text(encoding="utf-8"))
+              print(d.get("n_cids", 0))
+              PY
+              )
+
+              if [ "${n_cids}" -le 0 ]; then
+                echo "[workflow] shard ${shard_idx} has no CIDs, stop."
+                break
+              fi
+
+              if [ -z "${shard_dirs}" ]; then
+                shard_dirs="${shard_dir}"
+              else
+                shard_dirs="${shard_dirs},${shard_dir}"
+              fi
+
+              processed=$((processed + current_count))
+              offset=$((offset + current_count))
+              shard_idx=$((shard_idx + 1))
+
+              if [ "${n_cids}" -lt "${current_count}" ]; then
+                echo "[workflow] last shard reached (n_cids=${n_cids} < count=${current_count})."
+                break
+              fi
+            done
+
+            if [ -z "${shard_dirs}" ]; then
+              echo "No shard outputs were produced."
+              exit 1
+            fi
+
+            python scripts/merge_pubchem_trials_shards.py \
+              --shard-dirs "${shard_dirs}" \
+              --out-dir out/pubchem_trials_dataset_gh
+          else
+            LIMIT_ARGS=""
+            if [ -n "${LIMIT_CIDS}" ]; then
+              LIMIT_ARGS="--limit-cids ${LIMIT_CIDS}"
+            fi
+
+            python scripts/export_pubchem_trials_dataset.py \
+              --hnid "${HNID}" \
+              $EXTRA_ARGS \
+              $LIMIT_ARGS \
+              --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
+              --limit-per-collection "${LIMIT_PER_COLLECTION}" \
+              --image-size "${IMAGE_SIZE}" \
+              --out-dir out/pubchem_trials_dataset_gh
+          fi
 
       - name: Update PubChem trials snapshots
         env:

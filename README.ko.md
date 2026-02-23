@@ -251,6 +251,10 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
 - `.github/workflows/ctgov_collect.yml`
 - `.github/workflows/clinical_compound_table_pages.yml`
 
+`clinical_compound_table_pages` 수동 실행 입력값:
+
+- `shard_size` (기본 `500`, `0`이면 shard 비활성화)
+
 PubChem `trials.json` 스냅샷 저장 경로:
 
 - `snapshots/clinical_trials/latest/trials.json` (최신)
