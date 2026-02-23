@@ -1,6 +1,6 @@
 # CLI
 
-Module: src/clinical_data_analyzer/cli.py
+Module: src/clinpipe/cli.py
 
 The CLI supports single-compound dataset builds and HNID-based collection flows.
 

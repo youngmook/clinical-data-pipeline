@@ -1,12 +1,12 @@
 # 파이프라인
 
-모듈: `src/clinical_data_analyzer/pipeline/`
+모듈: `src/clinpipe/pipeline/`
 
 이 파이프라인은 PubChem 화합물을 ClinicalTrials.gov 임상시험과 연결하고 데이터셋을 내보냅니다.
 
 ## collect_ctgov_docs 서비스 (Step1-3)
 
-모듈: `src/clinical_data_analyzer/pipeline/collect_ctgov_docs_service.py`
+모듈: `src/clinpipe/pipeline/collect_ctgov_docs_service.py`
 
 목적:
 
@@ -26,7 +26,7 @@
 
 ## CompoundTrialLinker
 
-모듈: `src/clinical_data_analyzer/pipeline/linker.py`
+모듈: `src/clinpipe/pipeline/linker.py`
 
 목적:
 
@@ -49,7 +49,7 @@
 
 ## build_dataset_for_cids
 
-모듈: `src/clinical_data_analyzer/pipeline/build_dataset.py`
+모듈: `src/clinpipe/pipeline/build_dataset.py`
 
 입력:
 
@@ -72,7 +72,7 @@
 
 ## CID to NCT 내보내기 (PUG-View)
 
-모듈: `src/clinical_data_analyzer/pipeline/cid_to_nct.py`
+모듈: `src/clinpipe/pipeline/cid_to_nct.py`
 
 - `cid_to_nct_ids(cid) -> List[str]`
 - `cids_to_nct_ids(cids) -> Dict[int, List[str]]`
@@ -124,8 +124,8 @@
 ## 예시
 
 ```python
-from clinical_data_analyzer import CTGovClient, PubChemClient
-from clinical_data_analyzer.pipeline import build_dataset_for_cids
+from clinpipe import CTGovClient, PubChemClient
+from clinpipe.pipeline import build_dataset_for_cids
 
 pub = PubChemClient()
 ct = CTGovClient()

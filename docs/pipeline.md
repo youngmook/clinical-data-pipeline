@@ -1,12 +1,12 @@
 # Pipeline
 
-Module: src/clinical_data_analyzer/pipeline/
+Module: src/clinpipe/pipeline/
 
 The pipeline links PubChem compounds to ClinicalTrials.gov studies and exports datasets.
 
 ## collect_ctgov_docs service (Step1-3)
 
-Module: `src/clinical_data_analyzer/pipeline/collect_ctgov_docs_service.py`
+Module: `src/clinpipe/pipeline/collect_ctgov_docs_service.py`
 
 Purpose:
 
@@ -26,7 +26,7 @@ Result payload includes counts and output file paths.
 
 ## CompoundTrialLinker
 
-Module: src/clinical_data_analyzer/pipeline/linker.py
+Module: src/clinpipe/pipeline/linker.py
 
 Purpose:
 
@@ -49,7 +49,7 @@ Output:
 
 ## build_dataset_for_cids
 
-Module: src/clinical_data_analyzer/pipeline/build_dataset.py
+Module: src/clinpipe/pipeline/build_dataset.py
 
 Inputs:
 
@@ -72,7 +72,7 @@ DatasetBuildConfig:
 
 ## CID to NCT export (PUG-View)
 
-Module: src/clinical_data_analyzer/pipeline/cid_to_nct.py
+Module: src/clinpipe/pipeline/cid_to_nct.py
 
 - cid_to_nct_ids(cid) -> List[str]
 - cids_to_nct_ids(cids) -> Dict[int, List[str]]
@@ -124,8 +124,8 @@ When using `scripts/build_clinical_dataset.py`, the output
 ## Example
 
 ```python
-from clinical_data_analyzer import CTGovClient, PubChemClient
-from clinical_data_analyzer.pipeline import build_dataset_for_cids
+from clinpipe import CTGovClient, PubChemClient
+from clinpipe.pipeline import build_dataset_for_cids
 
 pub = PubChemClient()
 ct = CTGovClient()

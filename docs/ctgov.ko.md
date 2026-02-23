@@ -1,6 +1,6 @@
 # ClinicalTrials.gov v2 클라이언트
 
-모듈: src/clinical_data_analyzer/ctgov/client.py
+모듈: src/clinpipe/ctgov/client.py
 
 이 클라이언트는 ClinicalTrials.gov v2 API를 감싸서 페이지네이션 검색과 스터디 조회 기능을 제공합니다.
 
@@ -113,7 +113,7 @@ extract_study_compact 기준의 간소화된 필드를 반환합니다.
 기본 검색:
 
 ```python
-from clinical_data_analyzer.ctgov import CTGovClient, CTGovSort
+from clinpipe.ctgov import CTGovClient, CTGovSort
 
 ct = CTGovClient()
 res = ct.search_studies(term="aspirin", fields=["NCTId", "BriefTitle"], sort=CTGovSort.desc("LastUpdatePostDate"))
@@ -122,7 +122,7 @@ res = ct.search_studies(term="aspirin", fields=["NCTId", "BriefTitle"], sort=CTG
 검증 포함 반복 조회:
 
 ```python
-from clinical_data_analyzer.ctgov import CTGovClient
+from clinpipe.ctgov import CTGovClient
 
 ct = CTGovClient()
 for s in ct.iter_studies(query={"titles": "metformin"}, validate_query_keys=True, max_results=50):

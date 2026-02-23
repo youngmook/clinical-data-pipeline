@@ -1,6 +1,6 @@
 # PubChem 클라이언트
 
-모듈: `src/clinical_data_analyzer/pubchem/`
+모듈: `src/clinpipe/pubchem/`
 
 이 패키지는 PubChem API를 감싸서 다음 기능을 제공합니다:
 
@@ -11,7 +11,7 @@
 
 ## PubChemClient
 
-모듈: `src/clinical_data_analyzer/pubchem/client.py`
+모듈: `src/clinpipe/pubchem/client.py`
 
 메서드:
 
@@ -24,7 +24,7 @@
 
 ## PubChemClassificationClient
 
-모듈: `src/clinical_data_analyzer/pubchem/classification_nodes.py`
+모듈: `src/clinpipe/pubchem/classification_nodes.py`
 
 메서드:
 
@@ -33,14 +33,14 @@
 
 HNID 헬퍼:
 
-모듈: `src/clinical_data_analyzer/pubchem/clinical_trials_nodes.py`
+모듈: `src/clinpipe/pubchem/clinical_trials_nodes.py`
 
 - `download_clinical_trials_cids(out_dir="out_hnid", include_sources=True)`
   - 반환 dict 키: `clinical_trials`, `clinicaltrials_gov`, `eu_register`, `japan_niph`
 
 ## PubChemPugViewClient
 
-모듈: `src/clinical_data_analyzer/pubchem/pug_view.py`
+모듈: `src/clinpipe/pubchem/pug_view.py`
 
 메서드:
 
@@ -61,7 +61,7 @@ source 경로까지 함께 가져오는 메서드:
 
 ## PubChemWebFallbackClient
 
-모듈: `src/clinical_data_analyzer/pubchem/web_fallback/`
+모듈: `src/clinpipe/pubchem/web_fallback/`
 
 메서드:
 
@@ -98,7 +98,7 @@ source 경로까지 함께 가져오는 메서드:
 CID 및 동의어 조회:
 
 ```python
-from clinical_data_analyzer.pubchem import PubChemClient
+from clinpipe.pubchem import PubChemClient
 
 pub = PubChemClient()
 cids = pub.cids_by_name("aspirin")
@@ -109,7 +109,7 @@ syms = pub.synonyms(cids[0], max_items=20)
 PUG-View로 NCT ID 조회:
 
 ```python
-from clinical_data_analyzer.pubchem import PubChemPugViewClient
+from clinpipe.pubchem import PubChemPugViewClient
 
 pv = PubChemPugViewClient()
 print(pv.nct_ids_for_cid(2244))

@@ -21,7 +21,7 @@ This file is a practical handover for continuing work quickly.
    - error details written into output rows
 3. `studies.jsonl` now includes top-level `cid` in step1-3 collector output.
 4. Step1-3 collector moved toward service pattern:
-   - `src/clinical_data_analyzer/pipeline/collect_ctgov_docs_service.py`
+   - `src/clinpipe/pipeline/collect_ctgov_docs_service.py`
    - wrappers:
      - `scripts/collect_ctgov_docs.py`
 5. Streaming collection behavior implemented for better visibility:
@@ -39,15 +39,15 @@ This file is a practical handover for continuing work quickly.
    - NCT ID linked to CTGov, plus PubChem link per row
 9. Refactored PubChem fallback internals:
    - legacy single-file fallback removed
-   - provider-based modules under `src/clinical_data_analyzer/pubchem/web_fallback/`
+   - provider-based modules under `src/clinpipe/pubchem/web_fallback/`
    - normalized union schema uses `id`/`date` and `id_url`
 
 ## Key Files to Read First
 
-- `src/clinical_data_analyzer/pipeline/collect_ctgov_docs_service.py`
-- `src/clinical_data_analyzer/pipeline/cid_to_nct.py`
-- `src/clinical_data_analyzer/pubchem/pug_view.py`
-- `src/clinical_data_analyzer/pubchem/web_fallback/`
+- `src/clinpipe/pipeline/collect_ctgov_docs_service.py`
+- `src/clinpipe/pipeline/cid_to_nct.py`
+- `src/clinpipe/pubchem/pug_view.py`
+- `src/clinpipe/pubchem/web_fallback/`
 - `scripts/collect_ctgov_docs.py`
 - `scripts/update_studies_history.py`
 - `scripts/export_pubchem_trials_dataset.py`

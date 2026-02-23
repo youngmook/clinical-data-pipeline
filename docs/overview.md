@@ -23,9 +23,9 @@ High-level flow:
 
 Key packages:
 
-- clinical_data_analyzer.ctgov: ClinicalTrials.gov v2 API client
-- clinical_data_analyzer.pubchem: PubChem REST and PUG-View clients
-- clinical_data_analyzer.pipeline: Linker and dataset build logic
+- clinpipe.ctgov: ClinicalTrials.gov v2 API client
+- clinpipe.pubchem: PubChem REST and PUG-View clients
+- clinpipe.pipeline: Linker and dataset build logic
 
 Transition alias package:
 

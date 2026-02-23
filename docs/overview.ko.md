@@ -23,9 +23,9 @@
 
 핵심 패키지:
 
-- `clinical_data_analyzer.ctgov`: ClinicalTrials.gov v2 API 클라이언트
-- `clinical_data_analyzer.pubchem`: PubChem REST/PUG-View 및 fallback 클라이언트
-- `clinical_data_analyzer.pipeline`: 링커 및 데이터셋 생성 로직
+- `clinpipe.ctgov`: ClinicalTrials.gov v2 API 클라이언트
+- `clinpipe.pubchem`: PubChem REST/PUG-View 및 fallback 클라이언트
+- `clinpipe.pipeline`: 링커 및 데이터셋 생성 로직
 
 전환용 alias 패키지:
 

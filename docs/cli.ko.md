@@ -1,6 +1,6 @@
 # CLI
 
-모듈: `src/clinical_data_analyzer/cli.py`
+모듈: `src/clinpipe/cli.py`
 
 CLI는 단일 화합물 데이터셋 생성과 HNID 기반 수집 흐름을 지원합니다.
 

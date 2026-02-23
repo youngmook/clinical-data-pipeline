@@ -20,7 +20,7 @@ If this is your first run, use this section first.
 ```bash
 conda create -n clinical-pipeline python=3.11 -y
 conda activate clinical-pipeline
-pip install -e .
+pip install clinpipe
 ```
 
 Run a small smoke test (first CID + first NCT):
@@ -42,7 +42,7 @@ PYTHONUNBUFFERED=1 python -u scripts/collect_ctgov_docs.py \
 ```bash
 uv venv .venv --python 3.11
 source .venv/bin/activate
-uv pip install -e .
+uv pip install clinpipe
 ```
 
 Run the same smoke test:
@@ -145,7 +145,7 @@ This project currently supports **compound (CID) retrieval** from clinical-trial
 ### 1) Download PubChem CIDs for clinical trials (HNID-based)
 
 ```python
-from clinical_data_analyzer.pubchem.clinical_trials_nodes import download_clinical_trials_cids
+from clinpipe.pubchem.clinical_trials_nodes import download_clinical_trials_cids
 
 results = download_clinical_trials_cids(out_dir="out_hnid")
 
@@ -174,12 +174,12 @@ The example below shows the full pipeline:
 3. retrieve full trial documents from ClinicalTrials.gov
 
 ```python
-from clinical_data_analyzer.pubchem import (
+from clinpipe.pubchem import (
     PubChemClient,
     PubChemClassificationClient,
     PubChemPugViewClient,
 )
-from clinical_data_analyzer.ctgov import CTGovClient
+from clinpipe.ctgov import CTGovClient
 
 # Clinical Trials HNID
 HNID = 1856916
@@ -222,7 +222,7 @@ out_hnid/
 ## Package structure
 
 ```
-src/clinical_data_analyzer/
+src/clinpipe/
 ├─ pubchem/
 │  ├─ client.py                  # PUG REST: CID, properties, synonyms
 │  ├─ classification_nodes.py    # HNID → CID (Classification Nodes API)

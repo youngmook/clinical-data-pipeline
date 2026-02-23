@@ -80,7 +80,7 @@ https://pubchem.ncbi.nlm.nih.gov/rest/pug/classification/hnid/{HNID}/{id_type}/{
 ### 1) 임상시험 관련 PubChem CID 다운로드 (HNID 기반)
 
 ```python
-from clinical_data_analyzer.pubchem.clinical_trials_nodes import download_clinical_trials_cids
+from clinpipe.pubchem.clinical_trials_nodes import download_clinical_trials_cids
 
 results = download_clinical_trials_cids(out_dir="out_hnid")
 
@@ -109,12 +109,12 @@ out_hnid/
 3. ClinicalTrials.gov에서 임상시험 문서 조회
 
 ```python
-from clinical_data_analyzer.pubchem import (
+from clinpipe.pubchem import (
     PubChemClient,
     PubChemClassificationClient,
     PubChemPugViewClient,
 )
-from clinical_data_analyzer.ctgov import CTGovClient
+from clinpipe.ctgov import CTGovClient
 
 HNID = 1856916
 
@@ -140,7 +140,7 @@ for cid in cids:
 ## 패키지 구조
 
 ```
-src/clinical_data_analyzer/
+src/clinpipe/
 ├─ pubchem/
 │  ├─ client.py                  # PUG REST: CID, properties, synonyms
 │  ├─ classification_nodes.py    # HNID → CID
@@ -158,6 +158,18 @@ src/clinical_data_analyzer/
 ---
 
 ## 설치 (개발)
+
+일반 사용자 설치(PyPI):
+
+```bash
+pip install clinpipe
+```
+
+또는 uv:
+
+```bash
+uv pip install clinpipe
+```
 
 ```bash
 conda create -n clinical-pipeline python=3.11 -y

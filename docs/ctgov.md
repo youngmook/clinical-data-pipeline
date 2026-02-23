@@ -1,6 +1,6 @@
 # ClinicalTrials.gov v2 Client
 
-Module: src/clinical_data_analyzer/ctgov/client.py
+Module: src/clinpipe/ctgov/client.py
 
 This client wraps the ClinicalTrials.gov v2 API and provides paginated search and study retrieval.
 
@@ -113,7 +113,7 @@ Given a full study object, returns:
 Basic search:
 
 ```python
-from clinical_data_analyzer.ctgov import CTGovClient, CTGovSort
+from clinpipe.ctgov import CTGovClient, CTGovSort
 
 ct = CTGovClient()
 res = ct.search_studies(term="aspirin", fields=["NCTId", "BriefTitle"], sort=CTGovSort.desc("LastUpdatePostDate"))
@@ -122,7 +122,7 @@ res = ct.search_studies(term="aspirin", fields=["NCTId", "BriefTitle"], sort=CTG
 Iterate with validation:
 
 ```python
-from clinical_data_analyzer.ctgov import CTGovClient
+from clinpipe.ctgov import CTGovClient
 
 ct = CTGovClient()
 for s in ct.iter_studies(query={"titles": "metformin"}, validate_query_keys=True, max_results=50):

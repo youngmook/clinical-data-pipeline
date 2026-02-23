@@ -25,6 +25,23 @@ def test_clinpipe_alias_subpackages_exports():
     assert B_build is A_build
 
 
+def test_clinpipe_alias_submodule_imports():
+    from clinpipe.ctgov.client import CTGovClient as A1
+    from clinpipe.pubchem.client import PubChemClient as A2
+    from clinpipe.pubchem.classification_nodes import PubChemClassificationClient as A3
+    from clinpipe.pubchem.clinical_trials_nodes import download_clinical_trials_cids as A4
+    from clinpipe.pubchem.pug_view import PubChemPugViewClient as A5
+    from clinpipe.pipeline.build_dataset import build_dataset_for_cids as A6
+    from clinpipe.pipeline.linker import CompoundTrialLinker as A7
+    from clinpipe.pipeline.collect_ctgov_docs_service import collect_ctgov_docs as A8
+    from clinpipe.pipeline.cid_to_nct import export_cids_nct_dataset as A9
+    from clinpipe.pubchem.web_fallback import PubChemWebFallbackClient as A10
+
+    assert callable(A4)
+    for obj in (A1, A2, A3, A5, A6, A7, A8, A9, A10):
+        assert obj is not None
+
+
 def test_clinpipe_cli_wrapper_main():
     from clinpipe.cli import main
 

@@ -12,6 +12,7 @@ All notable changes to this project are documented in this file.
   - `docs/cli.md`
   - `docs/cli.ko.md`
 - Added `pip` and `uv` install examples for `clinpipe` in CLI docs.
+- Updated README Quickstart install commands to use PyPI package install (`clinpipe`) for end users.
 
 ### Added
 
@@ -19,8 +20,18 @@ All notable changes to this project are documented in this file.
   - `src/clinpipe/__init__.py`
   - `src/clinpipe/cli.py`
   - `src/clinpipe/ctgov/__init__.py`
+  - `src/clinpipe/ctgov/client.py`
   - `src/clinpipe/pubchem/__init__.py`
+  - `src/clinpipe/pubchem/client.py`
+  - `src/clinpipe/pubchem/classification_nodes.py`
+  - `src/clinpipe/pubchem/clinical_trials_nodes.py`
+  - `src/clinpipe/pubchem/pug_view.py`
+  - `src/clinpipe/pubchem/web_fallback/__init__.py`
   - `src/clinpipe/pipeline/__init__.py`
+  - `src/clinpipe/pipeline/build_dataset.py`
+  - `src/clinpipe/pipeline/linker.py`
+  - `src/clinpipe/pipeline/collect_ctgov_docs_service.py`
+  - `src/clinpipe/pipeline/cid_to_nct.py`
 - Added unit test for alias package imports:
   - `tests/test_clinpipe_alias_import_unit.py`
 - Updated package entrypoint:

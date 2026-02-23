@@ -1,6 +1,6 @@
 # PubChem Clients
 
-Module: src/clinical_data_analyzer/pubchem/
+Module: src/clinpipe/pubchem/
 
 This package wraps PubChem REST APIs for:
 
@@ -11,7 +11,7 @@ This package wraps PubChem REST APIs for:
 
 ## PubChemClient
 
-Module: src/clinical_data_analyzer/pubchem/client.py
+Module: src/clinpipe/pubchem/client.py
 
 Methods:
 
@@ -24,7 +24,7 @@ Methods:
 
 ## PubChemClassificationClient
 
-Module: src/clinical_data_analyzer/pubchem/classification_nodes.py
+Module: src/clinpipe/pubchem/classification_nodes.py
 
 Methods:
 
@@ -33,14 +33,14 @@ Methods:
 
 HNID helpers:
 
-Module: src/clinical_data_analyzer/pubchem/clinical_trials_nodes.py
+Module: src/clinpipe/pubchem/clinical_trials_nodes.py
 
 - download_clinical_trials_cids(out_dir="out_hnid", include_sources=True)
   - returns dict with keys: clinical_trials, clinicaltrials_gov, eu_register, japan_niph
 
 ## PubChemPugViewClient
 
-Module: src/clinical_data_analyzer/pubchem/pug_view.py
+Module: src/clinpipe/pubchem/pug_view.py
 
 Methods:
 
@@ -61,7 +61,7 @@ You can also retrieve the source path:
 
 ## PubChemWebFallbackClient
 
-Module: src/clinical_data_analyzer/pubchem/web_fallback/
+Module: src/clinpipe/pubchem/web_fallback/
 
 Methods:
 
@@ -98,7 +98,7 @@ Union schema mode:
 Resolve CID and synonyms:
 
 ```python
-from clinical_data_analyzer.pubchem import PubChemClient
+from clinpipe.pubchem import PubChemClient
 
 pub = PubChemClient()
 cids = pub.cids_by_name("aspirin")
@@ -109,7 +109,7 @@ syms = pub.synonyms(cids[0], max_items=20)
 Get NCT IDs via PUG-View:
 
 ```python
-from clinical_data_analyzer.pubchem import PubChemPugViewClient
+from clinpipe.pubchem import PubChemPugViewClient
 
 pv = PubChemPugViewClient()
 print(pv.nct_ids_for_cid(2244))
