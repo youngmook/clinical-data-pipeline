@@ -157,9 +157,9 @@ src/clinpipe/
 
 ---
 
-## 설치 (개발)
+## 설치
 
-일반 사용자 설치(PyPI):
+### 사용자 설치 (PyPI)
 
 ```bash
 pip install clinpipe
@@ -188,6 +188,8 @@ out_ctgov_smoke/
 ├─ compounds.jsonl
 └─ studies.jsonl
 ```
+
+### 개발 환경 (저장소 기반)
 
 ```bash
 conda create -n clinical-pipeline python=3.11 -y

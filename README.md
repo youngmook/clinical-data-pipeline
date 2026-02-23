@@ -226,11 +226,43 @@ src/clinpipe/
 
 ---
 
-## Environment Setup
+## Installation
 
-Choose one environment setup.
+### User Install (PyPI)
 
-### uv (Recommended for fast local setup)
+```bash
+pip install clinpipe
+```
+
+or with uv:
+
+```bash
+uv pip install clinpipe
+```
+
+Quick smoke:
+
+```bash
+clinpipe collect-ctgov \
+  --hnid 1856916 \
+  --limit 1 \
+  --out out_ctgov_smoke
+```
+
+Expected output:
+
+```
+out_ctgov_smoke/
+├─ cid_nct_links.jsonl
+├─ compounds.jsonl
+└─ studies.jsonl
+```
+
+### Development Setup (Repository)
+
+Choose one setup method.
+
+#### uv (Recommended for fast local setup)
 
 Create environment and install:
 
@@ -252,7 +284,7 @@ Run without activating shell state (optional):
 uv run python scripts/run_mvp_pipeline.py --hnid 3647573 --out-dir out_mvp --use-ctgov-fallback --resume
 ```
 
-### Conda (Recommended if you already use conda)
+#### Conda (Recommended if you already use conda)
 
 ```bash
 conda create -n clinical-pipeline python=3.11 -y
@@ -266,7 +298,7 @@ Optional development dependencies:
 pip install -e ".[dev]"
 ```
 
-### venv (Alternative)
+#### venv (Alternative)
 
 ```bash
 python -m venv .venv
