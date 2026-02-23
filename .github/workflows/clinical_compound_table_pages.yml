@@ -27,9 +27,11 @@ on:
         description: "PNG size for base64 images"
         required: false
         default: "400x400"
+  schedule:
+    - cron: "30 3 * * *"
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -55,32 +57,73 @@ jobs:
           python -m pip install -e .
 
       - name: Build dataset
+        env:
+          HNID: ${{ github.event.inputs.hnid || '1856916' }}
+          EXTRA_HNIDS: ${{ github.event.inputs.extra_hnids || '' }}
+          LIMIT_CIDS: ${{ github.event.inputs.limit_cids || '' }}
+          LIMIT_PER_COLLECTION: ${{ github.event.inputs.limit_per_collection || '200' }}
+          IMAGE_SIZE: ${{ github.event.inputs.image_size || '400x400' }}
         run: |
           mkdir -p out/pubchem_trials_dataset_gh
           EXTRA_ARGS=""
-          if [ -n "${{ inputs.extra_hnids }}" ]; then
-            EXTRA_ARGS="--extra-hnids ${{ inputs.extra_hnids }}"
+          if [ -n "${EXTRA_HNIDS}" ]; then
+            EXTRA_ARGS="--extra-hnids ${EXTRA_HNIDS}"
           fi
 
           LIMIT_ARGS=""
-          if [ -n "${{ inputs.limit_cids }}" ]; then
-            LIMIT_ARGS="--limit-cids ${{ inputs.limit_cids }}"
+          if [ -n "${LIMIT_CIDS}" ]; then
+            LIMIT_ARGS="--limit-cids ${LIMIT_CIDS}"
           fi
 
           python scripts/export_pubchem_trials_dataset.py \
-            --hnid "${{ inputs.hnid }}" \
+            --hnid "${HNID}" \
             $EXTRA_ARGS \
             $LIMIT_ARGS \
             --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
-            --limit-per-collection "${{ inputs.limit_per_collection }}" \
-            --image-size "${{ inputs.image_size }}" \
+            --limit-per-collection "${LIMIT_PER_COLLECTION}" \
+            --image-size "${IMAGE_SIZE}" \
             --out-dir out/pubchem_trials_dataset_gh
 
+      - name: Update PubChem trials snapshots
+        run: |
+          set -euo pipefail
+          python scripts/update_pubchem_trials_history.py \
+            --trials-file out/pubchem_trials_dataset_gh/trials.json \
+            --state-file snapshots/pubchem_trials/collection_state.json \
+            --latest-file snapshots/pubchem_trials/latest/trials.json \
+            --history-dir snapshots/pubchem_trials/history \
+            --changed-flag-path /tmp/pubchem_trials_changed.txt
+
+      - name: Commit and push snapshots
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- snapshots/pubchem_trials; then
+            echo "No PubChem snapshot changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add snapshots/pubchem_trials
+
+          COLLECTED_AT=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          state = json.loads(Path("snapshots/pubchem_trials/collection_state.json").read_text(encoding="utf-8"))
+          print(state.get("last_collected_at", "unknown"))
+          PY
+          )
+
+          git commit -m "chore(data): update pubchem trials snapshots (${COLLECTED_AT})"
+          git push origin HEAD:${GITHUB_REF_NAME}
+
       - name: Build table HTML
+        env:
+          TABLE_MODE: ${{ github.event.inputs.table_mode || 'datatables' }}
         run: |
           python scripts/build_pubchem_trials_table.py \
             --in-json out/pubchem_trials_dataset_gh/trials.json \
-            --mode "${{ inputs.table_mode }}" \
+            --mode "${TABLE_MODE}" \
             --out-html out/pubchem_trials_dataset_gh/index.html \
             --title "Clinical Trials Table"
 

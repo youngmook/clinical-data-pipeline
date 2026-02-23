@@ -2,6 +2,28 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+## v0.4.0 - 2026-02-23
+
+### Added
+
+- Added PubChem trials snapshot updater:
+  - `scripts/update_pubchem_trials_history.py`
+  - persists:
+    - `snapshots/pubchem_trials/latest/trials.json`
+    - `snapshots/pubchem_trials/history/trials_*.json`
+    - `snapshots/pubchem_trials/collection_state.json`
+- Added unit tests for PubChem snapshot update behavior:
+  - `tests/test_update_pubchem_trials_history_unit.py`
+
+### Changed
+
+- Updated `.github/workflows/clinical_compound_table_pages.yml`:
+  - added daily schedule trigger
+  - added snapshot update + commit/push step for `trials.json` history
+  - changed `contents` permission to `write` for automated snapshot commits
+
 ## v0.3.0 - 2026-02-10
 
 ### Added

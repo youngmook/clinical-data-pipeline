@@ -244,6 +244,29 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
   --progress-every 1
 ```
 
+## 스케줄 자동화 (GitHub Actions)
+
+다음 워크플로를 사용합니다:
+
+- `.github/workflows/ctgov_collect.yml`
+- `.github/workflows/clinical_compound_table_pages.yml`
+
+PubChem `trials.json` 스냅샷 저장 경로:
+
+- `snapshots/pubchem_trials/latest/trials.json` (최신)
+- `snapshots/pubchem_trials/history/trials_*.json` (수집 시각별 히스토리)
+- `snapshots/pubchem_trials/collection_state.json` (수집/변경 메타데이터)
+
+로컬에서 수집 후 스냅샷 갱신:
+
+```bash
+python scripts/update_pubchem_trials_history.py \
+  --trials-file out/pubchem_trials_dataset_check_v2/trials.json \
+  --state-file snapshots/pubchem_trials/collection_state.json \
+  --latest-file snapshots/pubchem_trials/latest/trials.json \
+  --history-dir snapshots/pubchem_trials/history
+```
+
 ### 임상시험 관련 CID 다운로드 (HNID)
 
 ```bash

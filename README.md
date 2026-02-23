@@ -374,6 +374,7 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
 The repository includes a scheduled workflow:
 
 - `.github/workflows/ctgov_collect.yml`
+- `.github/workflows/clinical_compound_table_pages.yml`
 
 What it does on each run:
 
@@ -391,6 +392,22 @@ Manual run (Actions UI) supports optional:
 - `hnid`
 - `limit_cids`
 - `limit_ncts`
+
+PubChem workflow snapshot outputs:
+
+- `snapshots/pubchem_trials/latest/trials.json` (latest)
+- `snapshots/pubchem_trials/history/trials_*.json` (timestamped history)
+- `snapshots/pubchem_trials/collection_state.json` (last collected/changed metadata)
+
+Local snapshot update after collecting `trials.json`:
+
+```bash
+python scripts/update_pubchem_trials_history.py \
+  --trials-file out/pubchem_trials_dataset_check_v2/trials.json \
+  --state-file snapshots/pubchem_trials/collection_state.json \
+  --latest-file snapshots/pubchem_trials/latest/trials.json \
+  --history-dir snapshots/pubchem_trials/history
+```
 
 ### Download clinical-trial–related CIDs (HNID)
 
