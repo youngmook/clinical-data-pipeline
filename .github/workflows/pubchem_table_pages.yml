@@ -1,4 +1,4 @@
-name: pubchem-table-pages
+name: clinical-compound-table-pages
 
 on:
   workflow_dispatch:
@@ -34,7 +34,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pubchem-table-pages
+  group: clinical-compound-table-pages
   cancel-in-progress: true
 
 jobs:
