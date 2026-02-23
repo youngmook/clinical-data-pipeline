@@ -22,6 +22,7 @@ All notable changes to this project are documented in this file.
 - Updated `.github/workflows/clinical_compound_table_pages.yml`:
   - added daily schedule trigger
   - added snapshot update + commit/push step for `trials.json` history
+  - added history retention option (`retention_days`, default 365)
   - changed `contents` permission to `write` for automated snapshot commits
 
 ## v0.3.0 - 2026-02-10

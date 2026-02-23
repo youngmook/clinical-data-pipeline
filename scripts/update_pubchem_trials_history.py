@@ -7,7 +7,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import shutil
 
@@ -42,6 +42,32 @@ def _write_state(path: Path, obj: dict) -> None:
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def _parse_snapshot_timestamp(path: Path) -> datetime | None:
+    name = path.name
+    if not (name.startswith("trials_") and name.endswith(".json")):
+        return None
+    token = name[len("trials_") : -len(".json")]
+    try:
+        return datetime.strptime(token, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _prune_old_snapshots(history_dir: Path, now_ts: datetime, retention_days: int) -> int:
+    if retention_days < 0 or not history_dir.exists():
+        return 0
+    cutoff = now_ts - timedelta(days=retention_days)
+    deleted = 0
+    for p in history_dir.glob("trials_*.json"):
+        snap_ts = _parse_snapshot_timestamp(p)
+        if snap_ts is None:
+            continue
+        if snap_ts < cutoff:
+            p.unlink(missing_ok=True)
+            deleted += 1
+    return deleted
+
+
 def main() -> int:
     p = argparse.ArgumentParser(prog="update-pubchem-trials-history")
     p.add_argument("--trials-file", required=True, help="Newly collected trials.json path")
@@ -49,6 +75,12 @@ def main() -> int:
     p.add_argument("--latest-file", default="snapshots/pubchem_trials/latest/trials.json")
     p.add_argument("--history-dir", default="snapshots/pubchem_trials/history")
     p.add_argument("--timestamp", default=None, help="UTC timestamp override (ISO8601)")
+    p.add_argument(
+        "--retention-days",
+        type=int,
+        default=365,
+        help="Delete snapshot files older than this many days (default: 365, negative to disable)",
+    )
     p.add_argument("--changed-flag-path", default=None, help="Write 'true' or 'false' for workflow")
     p.add_argument(
         "--snapshot-on-change",
@@ -67,6 +99,7 @@ def main() -> int:
 
     ts = args.timestamp or _now_utc_iso()
     safe_ts = ts.replace(":", "").replace("-", "")
+    now_dt = datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(timezone.utc)
 
     new_checksum = _checksum(trials_file)
     new_rows = _json_row_count(trials_file)
@@ -85,6 +118,8 @@ def main() -> int:
         snapshot_path = history_dir / f"trials_{safe_ts}.json"
         shutil.copy2(trials_file, snapshot_path)
 
+    deleted_snapshots = _prune_old_snapshots(history_dir, now_dt, args.retention_days)
+
     history_files = sorted(history_dir.glob("trials_*.json")) if history_dir.exists() else []
 
     state = {
@@ -95,6 +130,7 @@ def main() -> int:
         "latest_checksum": new_checksum,
         "latest_row_count": new_rows,
         "history_count": len(history_files),
+        "last_pruned_count": deleted_snapshots,
         "latest_snapshot": str(snapshot_path) if snapshot_path else prev.get("latest_snapshot", ""),
     }
     _write_state(state_file, state)
@@ -109,6 +145,7 @@ def main() -> int:
     print(f"state: {state_file}")
     if snapshot_path:
         print(f"snapshot: {snapshot_path}")
+    print(f"pruned_snapshots: {deleted_snapshots}")
     print(f"rows: {new_rows}")
     print(f"checksum: {new_checksum}")
     return 0

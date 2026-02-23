@@ -139,3 +139,41 @@ def test_update_pubchem_trials_history_snapshot_on_change(tmp_path: Path):
     )
     assert r3.returncode == 0, r3.stderr
     assert len(list(history.glob("trials_*.json"))) == 2
+
+
+def test_update_pubchem_trials_history_retention_prunes_old(tmp_path: Path):
+    src = tmp_path / "src"
+    src.mkdir(parents=True, exist_ok=True)
+    trials = src / "trials.json"
+    trials.write_text('[{"id":"NCT1"}]\n', encoding="utf-8")
+
+    state = tmp_path / "snapshots" / "collection_state.json"
+    latest = tmp_path / "snapshots" / "latest" / "trials.json"
+    history = tmp_path / "snapshots" / "history"
+    history.mkdir(parents=True, exist_ok=True)
+
+    old_snapshot = history / "trials_20240101T000000Z.json"
+    old_snapshot.write_text("[]\n", encoding="utf-8")
+
+    r = _run(
+        [
+            "--trials-file",
+            str(trials),
+            "--state-file",
+            str(state),
+            "--latest-file",
+            str(latest),
+            "--history-dir",
+            str(history),
+            "--timestamp",
+            "2026-02-23T00:00:00Z",
+            "--retention-days",
+            "365",
+        ]
+    )
+    assert r.returncode == 0, r.stderr
+    assert not old_snapshot.exists()
+    assert "pruned_snapshots: 1" in r.stdout
+
+    state_obj = json.loads(state.read_text(encoding="utf-8"))
+    assert state_obj["last_pruned_count"] == 1

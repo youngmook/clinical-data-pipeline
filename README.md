@@ -406,7 +406,8 @@ python scripts/update_pubchem_trials_history.py \
   --trials-file out/pubchem_trials_dataset_check_v2/trials.json \
   --state-file snapshots/pubchem_trials/collection_state.json \
   --latest-file snapshots/pubchem_trials/latest/trials.json \
-  --history-dir snapshots/pubchem_trials/history
+  --history-dir snapshots/pubchem_trials/history \
+  --retention-days 365
 ```
 
 ### Download clinical-trial–related CIDs (HNID)
