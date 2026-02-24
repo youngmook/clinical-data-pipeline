@@ -30,7 +30,7 @@ on:
       retention_days:
         description: "Delete history snapshots older than N days"
         required: false
-        default: "365"
+        default: "180"
   schedule:
     - cron: "30 3 * * *"
 
@@ -169,7 +169,7 @@ jobs:
 
       - name: Update PubChem trials snapshots
         env:
-          RETENTION_DAYS: ${{ github.event.inputs.retention_days || '365' }}
+          RETENTION_DAYS: ${{ github.event.inputs.retention_days || '180' }}
         run: |
           set -euo pipefail
           python scripts/update_pubchem_trials_history.py \
@@ -178,11 +178,21 @@ jobs:
             --latest-file snapshots/clinical_trials/latest/trials.json \
             --history-dir snapshots/clinical_trials/history \
             --retention-days "${RETENTION_DAYS}" \
-            --changed-flag-path /tmp/pubchem_trials_changed.txt
+            --changed-flag-path /tmp/pubchem_trials_changed.txt \
+            --snapshot-on-change
 
       - name: Commit and push snapshots
         run: |
           set -euo pipefail
+          CHANGED="false"
+          if [ -f /tmp/pubchem_trials_changed.txt ]; then
+            CHANGED="$(tr -d '[:space:]' < /tmp/pubchem_trials_changed.txt)"
+          fi
+          if [ "${CHANGED}" != "true" ]; then
+            echo "No dataset content changes. Skip commit/push."
+            exit 0
+          fi
+
           if git diff --quiet -- snapshots/clinical_trials; then
             echo "No PubChem snapshot changes to commit."
             exit 0
