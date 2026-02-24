@@ -35,6 +35,10 @@ on:
         description: "Delete history snapshots older than N days"
         required: false
         default: "365"
+      push_snapshots:
+        description: "Commit/push snapshots to repository (true/false)"
+        required: false
+        default: "true"
   schedule:
     - cron: "30 3 * * *"
 
@@ -53,6 +57,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -185,8 +191,15 @@ jobs:
             --changed-flag-path /tmp/pubchem_trials_changed.txt
 
       - name: Commit and push snapshots
+        env:
+          PUSH_SNAPSHOTS: ${{ github.event.inputs.push_snapshots || 'true' }}
         run: |
           set -euo pipefail
+          if [ "${PUSH_SNAPSHOTS}" != "true" ]; then
+            echo "Snapshot push disabled by input (push_snapshots=${PUSH_SNAPSHOTS})."
+            exit 0
+          fi
+
           if git diff --quiet -- snapshots/clinical_trials; then
             echo "No PubChem snapshot changes to commit."
             exit 0
@@ -205,7 +218,9 @@ jobs:
           )
 
           git commit -m "chore(data): update pubchem trials snapshots (${COLLECTED_AT})"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          TARGET_BRANCH="${GITHUB_REF_NAME:-main}"
+          echo "Pushing snapshots to branch: ${TARGET_BRANCH}"
+          git push origin HEAD:${TARGET_BRANCH}
 
       - name: Build table HTML
         env:
