@@ -3,47 +3,16 @@ name: clinical-compound-table-pages
 on:
   workflow_dispatch:
     inputs:
-      hnid:
-        description: "PubChem HNID"
-        required: false
-        default: "1856916"
-      extra_hnids:
-        description: "Comma-separated extra HNIDs"
-        required: false
-        default: ""
-      limit_cids:
-        description: "Limit CIDs for this run (empty = all, recommended for production)"
-        required: false
-        default: ""
-      limit_per_collection:
-        description: "Max rows per collection per CID"
-        required: false
-        default: "200"
       table_mode:
         description: "HTML table mode"
         required: false
         default: "datatables"
-      image_size:
-        description: "PNG size for base64 images"
-        required: false
-        default: "400x400"
-      shard_size:
-        description: "CID shard size (0 = disable shard mode)"
-        required: false
-        default: "500"
-      retention_days:
-        description: "Delete history snapshots older than N days"
-        required: false
-        default: "365"
-      push_snapshots:
-        description: "Commit/push snapshots to repository (true/false)"
-        required: false
-        default: "true"
-  schedule:
-    - cron: "30 3 * * *"
+  workflow_run:
+    workflows: ["collect-clinical-trials"]
+    types: [completed]
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -53,12 +22,11 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -70,157 +38,74 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
 
-      - name: Build dataset
-        env:
-          HNID: ${{ github.event.inputs.hnid || '1856916' }}
-          EXTRA_HNIDS: ${{ github.event.inputs.extra_hnids || '' }}
-          LIMIT_CIDS: ${{ github.event.inputs.limit_cids || '' }}
-          LIMIT_PER_COLLECTION: ${{ github.event.inputs.limit_per_collection || '200' }}
-          IMAGE_SIZE: ${{ github.event.inputs.image_size || '400x400' }}
-          SHARD_SIZE: ${{ github.event.inputs.shard_size || '500' }}
+      - name: Prepare dataset from latest snapshot
         run: |
           set -euo pipefail
           mkdir -p out/pubchem_trials_dataset_gh
-          EXTRA_ARGS=""
-          if [ -n "${EXTRA_HNIDS}" ]; then
-            EXTRA_ARGS="--extra-hnids ${EXTRA_HNIDS}"
-          fi
+          cp snapshots/clinical_trials/latest/trials.json out/pubchem_trials_dataset_gh/trials.json
 
-          SHARD_SIZE_INT="${SHARD_SIZE:-0}"
-          if [ "${SHARD_SIZE_INT}" -gt 0 ]; then
-            echo "[workflow] shard mode enabled: shard_size=${SHARD_SIZE_INT}"
-            rm -rf out/pubchem_trials_shards
-            mkdir -p out/pubchem_trials_shards
-
-            offset=0
-            shard_idx=1
-            processed=0
-            shard_dirs=""
-
-            while true; do
-              current_count="${SHARD_SIZE_INT}"
-              if [ -n "${LIMIT_CIDS}" ]; then
-                remaining=$((LIMIT_CIDS - processed))
-                if [ "${remaining}" -le 0 ]; then
-                  break
-                fi
-                if [ "${remaining}" -lt "${current_count}" ]; then
-                  current_count="${remaining}"
-                fi
-              fi
-
-              shard_dir="out/pubchem_trials_shards/s${shard_idx}"
-              mkdir -p "${shard_dir}"
-              echo "[workflow] collecting shard=${shard_idx} offset=${offset} count=${current_count}"
-
-              python scripts/export_pubchem_trials_dataset.py \
-                --hnid "${HNID}" \
-                $EXTRA_ARGS \
-                --cid-offset "${offset}" \
-                --cid-count "${current_count}" \
-                --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
-                --limit-per-collection "${LIMIT_PER_COLLECTION}" \
-                --image-size "${IMAGE_SIZE}" \
-                --out-dir "${shard_dir}"
-
-              n_cids=$(python - <<PY
-              import json
-              from pathlib import Path
-              p = Path("${shard_dir}") / "summary.json"
-              d = json.loads(p.read_text(encoding="utf-8"))
-              print(d.get("n_cids", 0))
-              PY
-              )
-
-              if [ "${n_cids}" -le 0 ]; then
-                echo "[workflow] shard ${shard_idx} has no CIDs, stop."
-                break
-              fi
-
-              if [ -z "${shard_dirs}" ]; then
-                shard_dirs="${shard_dir}"
-              else
-                shard_dirs="${shard_dirs},${shard_dir}"
-              fi
-
-              processed=$((processed + current_count))
-              offset=$((offset + current_count))
-              shard_idx=$((shard_idx + 1))
-
-              if [ "${n_cids}" -lt "${current_count}" ]; then
-                echo "[workflow] last shard reached (n_cids=${n_cids} < count=${current_count})."
-                break
-              fi
-            done
-
-            if [ -z "${shard_dirs}" ]; then
-              echo "No shard outputs were produced."
-              exit 1
-            fi
-
-            python scripts/merge_pubchem_trials_shards.py \
-              --shard-dirs "${shard_dirs}" \
-              --out-dir out/pubchem_trials_dataset_gh
-          else
-            LIMIT_ARGS=""
-            if [ -n "${LIMIT_CIDS}" ]; then
-              LIMIT_ARGS="--limit-cids ${LIMIT_CIDS}"
-            fi
-
-            python scripts/export_pubchem_trials_dataset.py \
-              --hnid "${HNID}" \
-              $EXTRA_ARGS \
-              $LIMIT_ARGS \
-              --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
-              --limit-per-collection "${LIMIT_PER_COLLECTION}" \
-              --image-size "${IMAGE_SIZE}" \
-              --out-dir out/pubchem_trials_dataset_gh
-          fi
-
-      - name: Update PubChem trials snapshots
-        env:
-          RETENTION_DAYS: ${{ github.event.inputs.retention_days || '365' }}
-        run: |
-          set -euo pipefail
-          python scripts/update_pubchem_trials_history.py \
-            --trials-file out/pubchem_trials_dataset_gh/trials.json \
-            --state-file snapshots/clinical_trials/collection_state.json \
-            --latest-file snapshots/clinical_trials/latest/trials.json \
-            --history-dir snapshots/clinical_trials/history \
-            --retention-days "${RETENTION_DAYS}" \
-            --changed-flag-path /tmp/pubchem_trials_changed.txt
-
-      - name: Commit and push snapshots
-        env:
-          PUSH_SNAPSHOTS: ${{ github.event.inputs.push_snapshots || 'true' }}
-        run: |
-          set -euo pipefail
-          if [ "${PUSH_SNAPSHOTS}" != "true" ]; then
-            echo "Snapshot push disabled by input (push_snapshots=${PUSH_SNAPSHOTS})."
-            exit 0
-          fi
-
-          if git diff --quiet -- snapshots/clinical_trials; then
-            echo "No PubChem snapshot changes to commit."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add snapshots/clinical_trials
-
-          COLLECTED_AT=$(python - <<'PY'
+          python - <<'PY'
+          import csv
           import json
           from pathlib import Path
-          state = json.loads(Path("snapshots/clinical_trials/collection_state.json").read_text(encoding="utf-8"))
-          print(state.get("last_collected_at", "unknown"))
-          PY
+
+          out_dir = Path("out/pubchem_trials_dataset_gh")
+          trials_path = out_dir / "trials.json"
+          rows = json.loads(trials_path.read_text(encoding="utf-8"))
+          if not isinstance(rows, list):
+              rows = [rows]
+
+          keys = set()
+          cids = set()
+          for r in rows:
+              if isinstance(r, dict):
+                  keys.update(r.keys())
+                  cid = r.get("cid")
+                  if isinstance(cid, int):
+                      cids.add(cid)
+
+          preferred = [
+              "cid",
+              "collection",
+              "id",
+              "id_url",
+              "title",
+              "phase",
+              "status",
+              "date",
+              "smiles",
+              "inchikey",
+              "iupac_name",
+              "image_base64",
+              "compound_error",
+          ]
+          header = [k for k in preferred if k in keys] + sorted(k for k in keys if k not in preferred)
+
+          with (out_dir / "trials.csv").open("w", newline="", encoding="utf-8") as f:
+              w = csv.DictWriter(f, fieldnames=header)
+              w.writeheader()
+              for r in rows:
+                  if isinstance(r, dict):
+                      w.writerow({k: r.get(k) for k in header})
+
+          (out_dir / "cids.txt").write_text(
+              "\n".join(str(x) for x in sorted(cids)) + ("\n" if cids else ""),
+              encoding="utf-8",
           )
 
-          git commit -m "chore(data): update pubchem trials snapshots (${COLLECTED_AT})"
-          TARGET_BRANCH="${GITHUB_REF_NAME:-main}"
-          echo "Pushing snapshots to branch: ${TARGET_BRANCH}"
-          git push origin HEAD:${TARGET_BRANCH}
+          summary = {
+              "source": "snapshots/clinical_trials/latest/trials.json",
+              "n_rows": len(rows),
+              "n_cids": len(cids),
+              "csv": str(out_dir / "trials.csv"),
+              "json": str(trials_path),
+              "cids": str(out_dir / "cids.txt"),
+          }
+          (out_dir / "summary.json").write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
 
       - name: Build table HTML
         env:
