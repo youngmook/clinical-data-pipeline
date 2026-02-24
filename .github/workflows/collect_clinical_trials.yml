@@ -113,14 +113,7 @@ jobs:
                 --image-size "${IMAGE_SIZE}" \
                 --out-dir "${shard_dir}"
 
-              n_cids=$(python - <<PY
-              import json
-              from pathlib import Path
-              p = Path("${shard_dir}") / "summary.json"
-              d = json.loads(p.read_text(encoding="utf-8"))
-              print(d.get("n_cids", 0))
-              PY
-              )
+              n_cids=$(python -c 'import json, pathlib, sys; p = pathlib.Path(sys.argv[1]) / "summary.json"; d = json.loads(p.read_text(encoding="utf-8")); print(d.get("n_cids", 0))' "${shard_dir}")
 
               if [ "${n_cids}" -le 0 ]; then
                 echo "[workflow] shard ${shard_idx} has no CIDs, stop."
@@ -202,13 +195,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add snapshots/clinical_trials
 
-          COLLECTED_AT=$(python - <<'PY'
-          import json
-          from pathlib import Path
-          state = json.loads(Path("snapshots/clinical_trials/collection_state.json").read_text(encoding="utf-8"))
-          print(state.get("last_collected_at", "unknown"))
-          PY
-          )
+          COLLECTED_AT=$(python -c 'import json, pathlib; state = json.loads(pathlib.Path("snapshots/clinical_trials/collection_state.json").read_text(encoding="utf-8")); print(state.get("last_collected_at", "unknown"))')
 
           git commit -m "chore(data): update pubchem trials snapshots (${COLLECTED_AT})"
           TARGET_BRANCH="${GITHUB_REF_NAME:-main}"
