@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import base64
 import csv
+import hashlib
 import json
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -41,6 +42,19 @@ def _iter_jsonl(path: Path) -> Iterable[Dict[str, object]]:
             if not line:
                 continue
             yield json.loads(line)
+
+
+def _iter_json_rows(path: Path) -> Iterable[Dict[str, object]]:
+    if not path.exists():
+        return
+    obj = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(obj, list):
+        for row in obj:
+            if isinstance(row, dict):
+                yield row
+        return
+    if isinstance(obj, dict):
+        yield obj
 
 
 def _extract_processed_cids(path: Path) -> Set[int]:
@@ -118,6 +132,52 @@ def _sanitize_trial_row(row: Dict[str, object]) -> Dict[str, object]:
     return {k: v for k, v in row.items() if k not in drop_keys}
 
 
+def _trial_key(row: Dict[str, object]) -> str:
+    cid = row.get("cid")
+    collection_code = row.get("collection_code") or row.get("collection")
+    trial_id = row.get("id")
+    return f"{cid}|{collection_code}|{trial_id}"
+
+
+def _trial_hash(row: Dict[str, object]) -> str:
+    stable = {k: v for k, v in row.items() if k != "image_base64"}
+    payload = json.dumps(stable, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _load_incremental_index(path: Path) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for row in _iter_json_rows(path) or []:
+        out[_trial_key(row)] = _trial_hash(row)
+    return out
+
+
+def _select_incremental_rows(rows: List[Dict[str, object]], index: Optional[Dict[str, str]]) -> Tuple[List[Dict[str, object]], int, int, int]:
+    if index is None:
+        return rows, len(rows), 0, 0
+
+    selected: List[Dict[str, object]] = []
+    n_new = 0
+    n_changed = 0
+    n_skipped = 0
+
+    for row in rows:
+        key = _trial_key(row)
+        current_hash = _trial_hash(row)
+        previous_hash = index.get(key)
+        if previous_hash is None:
+            selected.append(row)
+            n_new += 1
+            continue
+        if previous_hash != current_hash:
+            selected.append(row)
+            n_changed += 1
+            continue
+        n_skipped += 1
+
+    return selected, n_new, n_changed, n_skipped
+
+
 def _print_progress(
     *,
     idx: int,
@@ -153,6 +213,11 @@ def main() -> int:
     p.add_argument("--image-size", default="400x400", help="2D PNG size (e.g. 300x300)")
     p.add_argument("--skip-images", action="store_true", help="Do not fetch 2D PNG images")
     p.add_argument("--resume", action="store_true", help="Resume from existing trials.jsonl")
+    p.add_argument(
+        "--incremental-from",
+        default=None,
+        help="If set, compare with existing trials.json and write only new/changed rows",
+    )
     p.add_argument("--progress-every", type=int, default=50, help="Progress print interval")
     p.add_argument("--show-progress", action="store_true", help="Print per-CID progress logs")
     args = p.parse_args()
@@ -171,6 +236,9 @@ def main() -> int:
     csv_path = out_dir / "trials.csv"
     json_path = out_dir / "trials.json"
     summary_path = out_dir / "summary.json"
+
+    if not args.resume and jsonl_path.exists():
+        jsonl_path.unlink()
 
     class_client = PubChemClassificationClient()
     pubchem = PubChemClient()
@@ -203,6 +271,12 @@ def main() -> int:
     if args.resume and jsonl_path.exists():
         processed_cids = _extract_processed_cids(jsonl_path)
 
+    incremental_index: Optional[Dict[str, str]] = None
+    if args.incremental_from:
+        incremental_path = Path(args.incremental_from)
+        incremental_index = _load_incremental_index(incremental_path)
+        print(f"[export] incremental baseline={incremental_path} indexed_keys={len(incremental_index)}")
+
     print(
         f"[export] start hnids={hnids} collections={list(collections)} "
         f"cids={len(cids)} total_cids={total_cids_before_slice} "
@@ -213,6 +287,9 @@ def main() -> int:
     total_rows = 0
     total_with_trials = 0
     total_with_errors = 0
+    total_new_rows = 0
+    total_changed_rows = 0
+    total_skipped_unchanged_rows = 0
 
     # 2) CID -> trials union rows + smiles + image
     for idx, cid in enumerate(cids, start=1):
@@ -261,15 +338,20 @@ def main() -> int:
                 "compound_error": compound_error,
                 "image_base64": image_base64,
             }
-            _write_jsonl(jsonl_path, [err_row])
-            total_rows += 1
+            selected_rows, n_new, n_changed, n_skipped = _select_incremental_rows([err_row], incremental_index)
+            if selected_rows:
+                _write_jsonl(jsonl_path, selected_rows)
+            total_rows += len(selected_rows)
             total_with_errors += 1
+            total_new_rows += n_new
+            total_changed_rows += n_changed
+            total_skipped_unchanged_rows += n_skipped
             if args.show_progress:
                 _print_progress(
                     idx=idx,
                     total=len(cids),
                     cid=cid,
-                    added_rows=1,
+                    added_rows=len(selected_rows),
                     total_rows=total_rows,
                     errored=True,
                 )
@@ -308,15 +390,20 @@ def main() -> int:
             )
             out_rows.append(row)
 
-        _write_jsonl(jsonl_path, out_rows)
-        total_rows += len(out_rows)
+        selected_rows, n_new, n_changed, n_skipped = _select_incremental_rows(out_rows, incremental_index)
+        if selected_rows:
+            _write_jsonl(jsonl_path, selected_rows)
+        total_rows += len(selected_rows)
+        total_new_rows += n_new
+        total_changed_rows += n_changed
+        total_skipped_unchanged_rows += n_skipped
 
         if args.show_progress:
             _print_progress(
                 idx=idx,
                 total=len(cids),
                 cid=cid,
-                added_rows=len(out_rows),
+                added_rows=len(selected_rows),
                 total_rows=total_rows,
             )
 
@@ -351,8 +438,12 @@ def main() -> int:
         "n_cids_total": total_cids_before_slice,
         "n_cids": len(cids),
         "n_rows": total_rows,
+        "n_new_rows": total_new_rows,
+        "n_changed_rows": total_changed_rows,
+        "n_skipped_unchanged_rows": total_skipped_unchanged_rows,
         "n_cids_with_trials": total_with_trials,
         "n_error_rows": total_with_errors,
+        "incremental_from": args.incremental_from,
         "jsonl": str(jsonl_path),
         "csv": str(csv_path),
         "json": str(json_path),

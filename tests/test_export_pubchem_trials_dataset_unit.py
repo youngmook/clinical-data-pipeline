@@ -140,3 +140,76 @@ def test_export_pubchem_trials_dataset_shard_options_unit(tmp_path: Path):
     assert summary["n_cids"] == 2
     assert summary["cid_offset"] == 1
     assert summary["cid_count"] == 2
+
+
+def test_export_pubchem_trials_dataset_incremental_skip_unit(tmp_path: Path):
+    stub_dir = tmp_path / "stubs"
+    stub_dir.mkdir()
+
+    pkg = stub_dir / "clinical_data_analyzer"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("", encoding="utf-8")
+
+    pubchem_pkg = pkg / "pubchem"
+    pubchem_pkg.mkdir()
+    (pubchem_pkg / "__init__.py").write_text(
+        "class PubChemClassificationClient:\n"
+        "    def get_cids(self, hnid, fmt='TXT'):\n"
+        "        return [119]\n\n"
+        "class PubChemClient:\n"
+        "    def compound_properties(self, cid):\n"
+        "        return {'CanonicalSMILES':'C1=CC=CC=C1','InChIKey':'KEY','IUPACName':'benzene'}\n\n"
+        "class PubChemWebFallbackClient:\n"
+        "    def get_normalized_trials_union(self, cid, collections=('clinicaltrials',), limit_per_collection=200):\n"
+        "        rows=[\n"
+        "          {'collection':'clinicaltrials','collection_code':'clinicaltrials','id':'NCT00000001','title':'Trial A','phase':'Phase 2','status':'Completed','date':'2020-01-01','id_url':'https://clinicaltrials.gov/study/NCT00000001'}\n"
+        "        ]\n"
+        "        return rows, sorted(rows[0].keys())\n",
+        encoding="utf-8",
+    )
+
+    base_rows = [
+        {
+            "collection": "clinicaltrials",
+            "collection_code": "clinicaltrials",
+            "id": "NCT00000001",
+            "title": "Trial A",
+            "phase": "Phase 2",
+            "status": "Completed",
+            "date": "2020-01-01",
+            "id_url": "https://clinicaltrials.gov/study/NCT00000001",
+            "cid": 119,
+            "smiles": "C1=CC=CC=C1",
+            "inchikey": "KEY",
+            "iupac_name": "benzene",
+        }
+    ]
+    base_json = tmp_path / "base.json"
+    base_json.write_text(json.dumps(base_rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    out_dir = tmp_path / "out"
+    env = {"PYTHONPATH": str(stub_dir)}
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/export_pubchem_trials_dataset.py",
+            "--hnid",
+            "3647573",
+            "--out-dir",
+            str(out_dir),
+            "--skip-images",
+            "--incremental-from",
+            str(base_json),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+
+    summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+    assert summary["n_rows"] == 0
+    assert summary["n_new_rows"] == 0
+    assert summary["n_changed_rows"] == 0
+    assert summary["n_skipped_unchanged_rows"] == 1

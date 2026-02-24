@@ -1,4 +1,4 @@
-name: collect-clinical-trials
+name: collect-clinical-trials-full
 
 on:
   workflow_dispatch:
@@ -32,13 +32,13 @@ on:
         required: false
         default: "180"
   schedule:
-    - cron: "30 3 * * *"
+    - cron: "0 4 1 * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: collect-clinical-trials
+  group: collect-clinical-trials-full
   cancel-in-progress: true
 
 jobs:
@@ -60,7 +60,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
 
-      - name: Build dataset
+      - name: Build full dataset
         env:
           HNID: ${{ github.event.inputs.hnid || '1856916' }}
           EXTRA_HNIDS: ${{ github.event.inputs.extra_hnids || '' }}
@@ -160,7 +160,7 @@ jobs:
               --out-dir out/pubchem_trials_dataset_gh
           fi
 
-      - name: Update PubChem trials snapshots
+      - name: Update snapshots
         env:
           RETENTION_DAYS: ${{ github.event.inputs.retention_days || '180' }}
         run: |
@@ -197,7 +197,7 @@ jobs:
 
           COLLECTED_AT=$(python -c 'import json, pathlib; state = json.loads(pathlib.Path("snapshots/clinical_trials/collection_state.json").read_text(encoding="utf-8")); print(state.get("last_collected_at", "unknown"))')
 
-          git commit -m "chore(data): update pubchem trials snapshots (${COLLECTED_AT})"
+          git commit -m "chore(data): full refresh pubchem trials snapshots (${COLLECTED_AT})"
           TARGET_BRANCH="${GITHUB_REF_NAME:-main}"
           echo "Pushing snapshots to branch: ${TARGET_BRANCH}"
           git push origin HEAD:${TARGET_BRANCH}

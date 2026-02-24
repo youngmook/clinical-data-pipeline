@@ -8,7 +8,7 @@ on:
         required: false
         default: "datatables"
   workflow_run:
-    workflows: ["collect-clinical-trials"]
+    workflows: ["collect-clinical-trials-full", "collect-clinical-trials-incremental"]
     types: [completed]
 
 permissions:
