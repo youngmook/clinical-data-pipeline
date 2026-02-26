@@ -93,6 +93,15 @@ jobs:
             --title "Clinical Compound Trials (Auto-updated)"
 
       - name: Update studies history and latest data snapshot
+        env:
+          HNID: ${{ github.event.inputs.hnid || '3647573' }}
+          LIMIT_CIDS: ${{ github.event.inputs.limit_cids || '' }}
+          LIMIT_NCTS: ${{ github.event.inputs.limit_ncts || '' }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           python scripts/update_studies_history.py \
@@ -106,6 +115,69 @@ jobs:
           cp out/ctgov_docs_schedule/final/clinical_compound_trials.csv data/ctgov/final/clinical_compound_trials.csv
           cp out/ctgov_docs_schedule/final/clinical_compound_trials.jsonl data/ctgov/final/clinical_compound_trials.jsonl
 
+          # Persist per-run execution metadata so each scheduled/manual run is traceable in repo history.
+          python - <<'PY'
+          import datetime
+          import json
+          import os
+          from pathlib import Path
+
+          run_log = Path("data/ctgov/run_log.json")
+          run_log.parent.mkdir(parents=True, exist_ok=True)
+
+          if run_log.exists():
+              try:
+                  obj = json.loads(run_log.read_text(encoding="utf-8"))
+              except Exception:
+                  obj = {}
+          else:
+              obj = {}
+
+          changed_flag = Path("/tmp/studies_changed.txt")
+          dataset_changed = False
+          if changed_flag.exists():
+              dataset_changed = changed_flag.read_text(encoding="utf-8").strip().lower() == "true"
+
+          now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+          entry = {
+              "run_at": now,
+              "event_name": os.getenv("EVENT_NAME", ""),
+              "run_id": os.getenv("RUN_ID", ""),
+              "run_attempt": os.getenv("RUN_ATTEMPT", ""),
+              "ref_name": os.getenv("REF_NAME", ""),
+              "sha": os.getenv("SHA", ""),
+              "hnid": os.getenv("HNID", ""),
+              "limit_cids": os.getenv("LIMIT_CIDS", ""),
+              "limit_ncts": os.getenv("LIMIT_NCTS", ""),
+              "dataset_changed": dataset_changed,
+          }
+
+          history = obj.get("history", [])
+          if not isinstance(history, list):
+              history = []
+          history.append(entry)
+          history = history[-100:]
+
+          obj["last_run"] = entry
+          obj["history_count"] = len(history)
+          obj["history"] = history
+          run_log.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print(f"run_log: {run_log}")
+          print(f"history_count: {len(history)}")
+          PY
+
+      - name: Upload CTGov dataset artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctgov-final-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            out/ctgov_docs_schedule/final/clinical_compound_trials.jsonl
+            out/ctgov_docs_schedule/final/clinical_compound_trials.csv
+            out/ctgov_docs_schedule/studies.jsonl
+            data/ctgov/collection_state.json
+            data/ctgov/run_log.json
+
       - name: Commit and push updated snapshots (if changed)
         run: |
           set -euo pipefail
@@ -118,15 +190,13 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/ctgov docs/data
 
-          COLLECTED_AT=$(python - <<'PY'
-          import json
-          from pathlib import Path
-          state = json.loads(Path("data/ctgov/collection_state.json").read_text(encoding="utf-8"))
-          print(state.get("last_collected_at", "unknown"))
-          PY
-          )
+          COLLECTED_AT=$(python -c 'import json, pathlib; state = json.loads(pathlib.Path("data/ctgov/collection_state.json").read_text(encoding="utf-8")); print(state.get("last_collected_at", "unknown"))')
+          DATASET_CHANGED="false"
+          if [ -f /tmp/studies_changed.txt ]; then
+            DATASET_CHANGED="$(tr -d '[:space:]' < /tmp/studies_changed.txt)"
+          fi
 
-          git commit -m "chore(data): update CTGov snapshots (${COLLECTED_AT})"
+          git commit -m "chore(data): update CTGov snapshots (${COLLECTED_AT}, changed=${DATASET_CHANGED}, run=${GITHUB_RUN_ID})"
           git push origin HEAD:${GITHUB_REF_NAME}
 
       - name: Save collected data cache
