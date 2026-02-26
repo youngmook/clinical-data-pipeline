@@ -23,6 +23,10 @@ on:
         description: "PNG size for base64 images"
         required: false
         default: "400x400"
+      skip_images:
+        description: "Skip PNG base64 image fetch (recommended)"
+        required: false
+        default: "true"
       shard_size:
         description: "CID shard size (0 = disable shard mode)"
         required: false
@@ -67,6 +71,7 @@ jobs:
           LIMIT_CIDS: ${{ github.event.inputs.limit_cids || '' }}
           LIMIT_PER_COLLECTION: ${{ github.event.inputs.limit_per_collection || '1000' }}
           IMAGE_SIZE: ${{ github.event.inputs.image_size || '400x400' }}
+          SKIP_IMAGES: ${{ github.event.inputs.skip_images || 'true' }}
           SHARD_SIZE: ${{ github.event.inputs.shard_size || '500' }}
         run: |
           set -euo pipefail
@@ -77,6 +82,12 @@ jobs:
           if [ -n "${EXTRA_HNIDS}" ]; then
             EXTRA_ARGS="--extra-hnids ${EXTRA_HNIDS}"
           fi
+          SKIP_IMAGES_NORMALIZED="$(echo "${SKIP_IMAGES}" | tr '[:upper:]' '[:lower:]')"
+          IMAGE_ARGS="--image-size ${IMAGE_SIZE}"
+          if [ "${SKIP_IMAGES_NORMALIZED}" = "true" ] || [ "${SKIP_IMAGES_NORMALIZED}" = "1" ] || [ "${SKIP_IMAGES_NORMALIZED}" = "yes" ]; then
+            IMAGE_ARGS="--skip-images"
+          fi
+          echo "[workflow] image fetch mode: ${IMAGE_ARGS}"
 
           # Prefetch CID universe once to avoid repeated HNID->CID API calls per shard.
           # If PubChem classification is temporarily unavailable, fallback to the last successful CID list.
@@ -128,7 +139,7 @@ jobs:
                 --cid-count "${current_count}" \
                 --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
                 --limit-per-collection "${LIMIT_PER_COLLECTION}" \
-                --image-size "${IMAGE_SIZE}" \
+                ${IMAGE_ARGS} \
                 --out-dir "${shard_dir}"
 
               n_cids=$(python -c 'import json, pathlib, sys; p = pathlib.Path(sys.argv[1]) / "summary.json"; d = json.loads(p.read_text(encoding="utf-8")); print(d.get("n_cids", 0))' "${shard_dir}")
@@ -176,7 +187,7 @@ jobs:
               $LIMIT_ARGS \
               --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
               --limit-per-collection "${LIMIT_PER_COLLECTION}" \
-              --image-size "${IMAGE_SIZE}" \
+              ${IMAGE_ARGS} \
               --out-dir out/pubchem_trials_dataset_delta
           fi
 
