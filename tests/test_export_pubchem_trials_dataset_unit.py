@@ -142,6 +142,63 @@ def test_export_pubchem_trials_dataset_shard_options_unit(tmp_path: Path):
     assert summary["cid_count"] == 2
 
 
+def test_export_pubchem_trials_dataset_uses_cids_file_unit(tmp_path: Path):
+    stub_dir = tmp_path / "stubs"
+    stub_dir.mkdir()
+
+    pkg = stub_dir / "clinical_data_analyzer"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("", encoding="utf-8")
+
+    pubchem_pkg = pkg / "pubchem"
+    pubchem_pkg.mkdir()
+    (pubchem_pkg / "__init__.py").write_text(
+        "class PubChemClassificationClient:\n"
+        "    def get_cids(self, hnid, fmt='TXT'):\n"
+        "        raise AssertionError('get_cids should not be called when --cids-file is provided')\n\n"
+        "class PubChemClient:\n"
+        "    def compound_properties(self, cid):\n"
+        "        return {'CanonicalSMILES':'C','InChIKey':'K','IUPACName':'x'}\n\n"
+        "class PubChemWebFallbackClient:\n"
+        "    def get_normalized_trials_union(self, cid, collections=('clinicaltrials',), limit_per_collection=200):\n"
+        "        rows=[{'collection':'clinicaltrials','collection_code':'clinicaltrials','id':f'NCT{cid}','title':'T','phase':'P2','status':'Completed','date':'2020-01-01','id_url':'u'}]\n"
+        "        return rows, sorted(rows[0].keys())\n",
+        encoding="utf-8",
+    )
+
+    cids_file = tmp_path / "cids.txt"
+    cids_file.write_text("101\n102\n", encoding="utf-8")
+
+    out_dir = tmp_path / "out"
+    env = {"PYTHONPATH": str(stub_dir)}
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/export_pubchem_trials_dataset.py",
+            "--hnid",
+            "3647573",
+            "--out-dir",
+            str(out_dir),
+            "--skip-images",
+            "--cids-file",
+            str(cids_file),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+
+    cids = [x for x in (out_dir / "cids.txt").read_text(encoding="utf-8").splitlines() if x.strip()]
+    assert cids == ["101", "102"]
+    summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+    assert summary["cids_file"] == str(cids_file)
+    assert summary["n_cids_total"] == 2
+    assert summary["n_cids"] == 2
+    assert summary["n_rows"] == 2
+
+
 def test_export_pubchem_trials_dataset_incremental_skip_unit(tmp_path: Path):
     stub_dir = tmp_path / "stubs"
     stub_dir.mkdir()

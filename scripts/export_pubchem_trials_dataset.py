@@ -23,6 +23,19 @@ def _parse_csv_list(value: Optional[str]) -> List[str]:
     return [x.strip() for x in value.split(",") if x.strip()]
 
 
+def _read_cids_file(path: Path) -> List[int]:
+    if not path.exists():
+        raise FileNotFoundError(f"cids file not found: {path}")
+    vals: List[int] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        if s.isdigit():
+            vals.append(int(s))
+    return vals
+
+
 def _ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
@@ -200,6 +213,11 @@ def main() -> int:
     p = argparse.ArgumentParser(prog="export-pubchem-trials-dataset")
     p.add_argument("--hnid", type=int, default=1856916, help="PubChem HNID (default: 1856916)")
     p.add_argument("--extra-hnids", default=None, help="Comma-separated extra HNIDs")
+    p.add_argument(
+        "--cids-file",
+        default=None,
+        help="Optional precomputed CID text file (one CID per line). If set, HNID fetch is skipped.",
+    )
     p.add_argument("--limit-cids", type=int, default=None, help="Limit number of CIDs for testing")
     p.add_argument("--cid-offset", type=int, default=0, help="Start index in deduped CID list (for shard runs)")
     p.add_argument("--cid-count", type=int, default=None, help="Number of CIDs to process from offset")
@@ -248,9 +266,12 @@ def main() -> int:
 
     # 1) Collect and dedupe CIDs
     cids: List[int] = []
-    for hnid in hnids:
-        cids.extend(class_client.get_cids(hnid, fmt="TXT"))
-    cids = _dedupe(cids)
+    if args.cids_file:
+        cids = _dedupe(_read_cids_file(Path(args.cids_file)))
+    else:
+        for hnid in hnids:
+            cids.extend(class_client.get_cids(hnid, fmt="TXT"))
+        cids = _dedupe(cids)
     total_cids_before_slice = len(cids)
 
     if args.cid_offset:
@@ -435,6 +456,7 @@ def main() -> int:
         "collections": list(collections),
         "cid_offset": args.cid_offset,
         "cid_count": args.cid_count,
+        "cids_file": args.cids_file,
         "n_cids_total": total_cids_before_slice,
         "n_cids": len(cids),
         "n_rows": total_rows,

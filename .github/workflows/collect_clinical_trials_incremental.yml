@@ -71,10 +71,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p out/pubchem_trials_dataset_delta
+          CIDS_FILE="out/pubchem_trials_dataset_delta/cids_all.txt"
           EXTRA_ARGS=""
           if [ -n "${EXTRA_HNIDS}" ]; then
             EXTRA_ARGS="--extra-hnids ${EXTRA_HNIDS}"
           fi
+
+          # Prefetch CID universe once to avoid repeated HNID->CID API calls per shard.
+          export CIDS_FILE HNID EXTRA_HNIDS
+          python -c 'import os, pathlib; from clinical_data_analyzer.pubchem import PubChemClassificationClient; hnids=[int(os.environ["HNID"])]; hnids.extend(int(x.strip()) for x in os.environ.get("EXTRA_HNIDS","").split(",") if x.strip()); c=PubChemClassificationClient(); seen=set(); out=[]; [out.append(cid) for h in hnids for cid in c.get_cids(h, fmt="TXT") if not (cid in seen or seen.add(cid))]; p=pathlib.Path(os.environ["CIDS_FILE"]); p.parent.mkdir(parents=True, exist_ok=True); p.write_text("".join(f"{x}\n" for x in out), encoding="utf-8"); print(f"prefetched_cids: {len(out)}")'
 
           INC_ARGS=""
           if [ -f snapshots/clinical_trials/latest/trials.json ]; then
@@ -112,6 +117,7 @@ jobs:
                 --hnid "${HNID}" \
                 $EXTRA_ARGS \
                 $INC_ARGS \
+                --cids-file "${CIDS_FILE}" \
                 --cid-offset "${offset}" \
                 --cid-count "${current_count}" \
                 --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
@@ -160,6 +166,7 @@ jobs:
               --hnid "${HNID}" \
               $EXTRA_ARGS \
               $INC_ARGS \
+              --cids-file "${CIDS_FILE}" \
               $LIMIT_ARGS \
               --collections clinicaltrials,clinicaltrials_eu,clinicaltrials_jp \
               --limit-per-collection "${LIMIT_PER_COLLECTION}" \

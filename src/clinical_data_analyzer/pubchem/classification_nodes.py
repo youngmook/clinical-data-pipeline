@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 import requests
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 
 class PubChemClassificationError(RuntimeError):
@@ -21,6 +22,19 @@ class PubChemClassificationClient:
     def _headers(self) -> dict:
         return {"User-Agent": self.user_agent}
 
+    @retry(
+        stop=stop_after_attempt(6),
+        wait=wait_exponential(multiplier=1, min=1, max=60),
+        retry=retry_if_exception_type((requests.RequestException,)),
+        reraise=True,
+    )
+    def _get_with_retry(self, url: str) -> requests.Response:
+        r = requests.get(url, headers=self._headers(), timeout=self.timeout)
+        # Retry only for transient/server-busy classes.
+        if r.status_code in (429, 500, 502, 503, 504):
+            raise requests.RequestException(f"Transient HTTP {r.status_code} for {url}: {r.text[:300]}")
+        return r
+
     def get_ids(self, hnid: int, id_type: str = "cids", fmt: str = "TXT") -> List[int]:
         """
         Generic: HNID -> list of IDs (as integers when possible).
@@ -34,7 +48,7 @@ class PubChemClassificationClient:
         fmt = fmt.upper()
         url = f"{self.base_url}/hnid/{hnid}/{id_type}/{fmt}"
 
-        r = requests.get(url, headers=self._headers(), timeout=self.timeout)
+        r = self._get_with_retry(url)
         if r.status_code != 200:
             raise PubChemClassificationError(f"HTTP {r.status_code} for {url}: {r.text[:300]}")
 
