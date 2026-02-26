@@ -430,16 +430,24 @@ Recommended workflow presets:
 PubChem workflow snapshot outputs:
 
 - `snapshots/clinical_trials/latest/trials.json` (latest)
+- `snapshots/clinical_trials/latest/compounds.json` (CID-level compound cache)
+- `snapshots/clinical_trials/latest/trials_compact.json` (trial-only compact rows)
 - `snapshots/clinical_trials/history/trials_*.json` (timestamped history)
+- `snapshots/clinical_trials/history/compounds_*.json` (timestamped compound history)
+- `snapshots/clinical_trials/history/trials_compact_*.json` (timestamped compact history)
 - `snapshots/clinical_trials/collection_state.json` (last collected/changed metadata, includes `source: pubchem`)
 
-Local snapshot update after collecting `trials.json`:
+Local snapshot update after collecting dataset files:
 
 ```bash
 python scripts/update_pubchem_trials_history.py \
   --trials-file out/pubchem_trials_dataset_check_v2/trials.json \
+  --compounds-file out/pubchem_trials_dataset_check_v2/compounds.json \
+  --trials-compact-file out/pubchem_trials_dataset_check_v2/trials_compact.json \
   --state-file snapshots/clinical_trials/collection_state.json \
   --latest-file snapshots/clinical_trials/latest/trials.json \
+  --latest-compounds-file snapshots/clinical_trials/latest/compounds.json \
+  --latest-trials-compact-file snapshots/clinical_trials/latest/trials_compact.json \
   --history-dir snapshots/clinical_trials/history \
   --retention-days 365
 ```

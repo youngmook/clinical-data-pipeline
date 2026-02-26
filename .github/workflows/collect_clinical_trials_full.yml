@@ -191,8 +191,12 @@ jobs:
           set -euo pipefail
           python scripts/update_pubchem_trials_history.py \
             --trials-file out/pubchem_trials_dataset_gh/trials.json \
+            --compounds-file out/pubchem_trials_dataset_gh/compounds.json \
+            --trials-compact-file out/pubchem_trials_dataset_gh/trials_compact.json \
             --state-file snapshots/clinical_trials/collection_state.json \
             --latest-file snapshots/clinical_trials/latest/trials.json \
+            --latest-compounds-file snapshots/clinical_trials/latest/compounds.json \
+            --latest-trials-compact-file snapshots/clinical_trials/latest/trials_compact.json \
             --history-dir snapshots/clinical_trials/history \
             --retention-days "${RETENTION_DAYS}" \
             --changed-flag-path /tmp/pubchem_trials_changed.txt \

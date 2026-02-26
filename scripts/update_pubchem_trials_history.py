@@ -10,6 +10,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import shutil
+from typing import Dict, List
 
 
 def _now_utc_iso() -> str:
@@ -42,37 +43,43 @@ def _write_state(path: Path, obj: dict) -> None:
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def _parse_snapshot_timestamp(path: Path) -> datetime | None:
+def _parse_snapshot_timestamp(path: Path, prefix: str) -> datetime | None:
     name = path.name
-    if not (name.startswith("trials_") and name.endswith(".json")):
+    expected = f"{prefix}_"
+    if not (name.startswith(expected) and name.endswith(".json")):
         return None
-    token = name[len("trials_") : -len(".json")]
+    token = name[len(expected) : -len(".json")]
     try:
         return datetime.strptime(token, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
     except ValueError:
         return None
 
 
-def _prune_old_snapshots(history_dir: Path, now_ts: datetime, retention_days: int) -> int:
+def _prune_old_snapshots(history_dir: Path, now_ts: datetime, retention_days: int, prefixes: List[str]) -> int:
     if retention_days < 0 or not history_dir.exists():
         return 0
     cutoff = now_ts - timedelta(days=retention_days)
     deleted = 0
-    for p in history_dir.glob("trials_*.json"):
-        snap_ts = _parse_snapshot_timestamp(p)
-        if snap_ts is None:
-            continue
-        if snap_ts < cutoff:
-            p.unlink(missing_ok=True)
-            deleted += 1
+    for prefix in prefixes:
+        for p in history_dir.glob("*.json"):
+            snap_ts = _parse_snapshot_timestamp(p, prefix)
+            if snap_ts is None:
+                continue
+            if snap_ts < cutoff:
+                p.unlink(missing_ok=True)
+                deleted += 1
     return deleted
 
 
 def main() -> int:
     p = argparse.ArgumentParser(prog="update-pubchem-trials-history")
     p.add_argument("--trials-file", required=True, help="Newly collected trials.json path")
+    p.add_argument("--compounds-file", default=None, help="Optional newly collected compounds.json path")
+    p.add_argument("--trials-compact-file", default=None, help="Optional newly collected trials_compact.json path")
     p.add_argument("--state-file", default="snapshots/clinical_trials/collection_state.json")
     p.add_argument("--latest-file", default="snapshots/clinical_trials/latest/trials.json")
+    p.add_argument("--latest-compounds-file", default="snapshots/clinical_trials/latest/compounds.json")
+    p.add_argument("--latest-trials-compact-file", default="snapshots/clinical_trials/latest/trials_compact.json")
     p.add_argument("--history-dir", default="snapshots/clinical_trials/history")
     p.add_argument("--timestamp", default=None, help="UTC timestamp override (ISO8601)")
     p.add_argument(
@@ -89,66 +96,148 @@ def main() -> int:
     )
     args = p.parse_args()
 
-    trials_file = Path(args.trials_file)
-    if not trials_file.exists():
-        raise FileNotFoundError(f"trials file not found: {trials_file}")
-
     state_file = Path(args.state_file)
-    latest_file = Path(args.latest_file)
     history_dir = Path(args.history_dir)
+
+    assets: List[Dict[str, object]] = [
+        {
+            "name": "trials",
+            "prefix": "trials",
+            "source": Path(args.trials_file),
+            "latest": Path(args.latest_file),
+        },
+        {
+            "name": "compounds",
+            "prefix": "compounds",
+            "source": Path(args.compounds_file) if args.compounds_file else None,
+            "latest": Path(args.latest_compounds_file),
+        },
+        {
+            "name": "trials_compact",
+            "prefix": "trials_compact",
+            "source": Path(args.trials_compact_file) if args.trials_compact_file else None,
+            "latest": Path(args.latest_trials_compact_file),
+        },
+    ]
+    all_prefixes = [str(a["prefix"]) for a in assets]
+
+    active_assets: List[Dict[str, object]] = []
+    for asset in assets:
+        src = asset["source"]
+        if src is None:
+            continue
+        if not isinstance(src, Path) or not src.exists():
+            raise FileNotFoundError(f"{asset['name']} file not found: {src}")
+        active_assets.append(asset)
 
     ts = args.timestamp or _now_utc_iso()
     safe_ts = ts.replace(":", "").replace("-", "")
     now_dt = datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(timezone.utc)
 
-    new_checksum = _checksum(trials_file)
-    new_rows = _json_row_count(trials_file)
-
     prev = _read_state(state_file)
-    prev_checksum = prev.get("latest_checksum")
-    changed = not latest_file.exists() or new_checksum != prev_checksum
+    prev_assets = prev.get("assets") if isinstance(prev.get("assets"), dict) else {}
+    changed_assets: List[str] = []
+    snapshot_paths: Dict[str, Path] = {}
+    state_assets: Dict[str, Dict[str, object]] = dict(prev_assets)
 
-    latest_file.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(trials_file, latest_file)
+    for asset in active_assets:
+        name = str(asset["name"])
+        src = asset["source"]
+        latest = asset["latest"]
+        prefix = str(asset["prefix"])
+        assert isinstance(src, Path)
+        assert isinstance(latest, Path)
 
-    should_snapshot = changed if args.snapshot_on_change else True
-    snapshot_path = None
-    if should_snapshot:
-        history_dir.mkdir(parents=True, exist_ok=True)
-        snapshot_path = history_dir / f"trials_{safe_ts}.json"
-        shutil.copy2(trials_file, snapshot_path)
+        checksum = _checksum(src)
+        rows = _json_row_count(src)
 
-    deleted_snapshots = _prune_old_snapshots(history_dir, now_dt, args.retention_days)
+        prev_checksum = None
+        prev_asset = prev_assets.get(name)
+        if isinstance(prev_asset, dict):
+            prev_checksum = prev_asset.get("latest_checksum")
+        if name == "trials" and prev_checksum is None:
+            prev_checksum = prev.get("latest_checksum")
 
-    history_files = sorted(history_dir.glob("trials_*.json")) if history_dir.exists() else []
+        changed = (not latest.exists()) or checksum != prev_checksum
+        if changed:
+            changed_assets.append(name)
+
+        latest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, latest)
+
+        if (not args.snapshot_on_change) or changed:
+            history_dir.mkdir(parents=True, exist_ok=True)
+            snapshot_path = history_dir / f"{prefix}_{safe_ts}.json"
+            shutil.copy2(src, snapshot_path)
+            snapshot_paths[name] = snapshot_path
+
+        state_assets[name] = {
+            "latest_file": str(latest),
+            "latest_checksum": checksum,
+            "latest_row_count": rows,
+            "latest_snapshot": str(snapshot_paths.get(name)) if name in snapshot_paths else (
+                prev_asset.get("latest_snapshot") if isinstance(prev_asset, dict) else ""
+            ),
+        }
+
+    overall_changed = len(changed_assets) > 0
+    deleted_snapshots = _prune_old_snapshots(history_dir, now_dt, args.retention_days, all_prefixes)
+
+    history_counts: Dict[str, int] = {}
+    if history_dir.exists():
+        for asset in assets:
+            prefix = str(asset["prefix"])
+            name = str(asset["name"])
+            n = 0
+            for p in history_dir.glob("*.json"):
+                if _parse_snapshot_timestamp(p, prefix) is not None:
+                    n += 1
+            history_counts[name] = n
+    else:
+        for asset in assets:
+            history_counts[str(asset["name"])] = 0
+
+    trials_state = state_assets.get("trials", {})
+    latest_file = str(trials_state.get("latest_file", args.latest_file))
+    latest_checksum = str(trials_state.get("latest_checksum", ""))
+    latest_row_count = int(trials_state.get("latest_row_count", 0))
+    latest_snapshot = str(trials_state.get("latest_snapshot", prev.get("latest_snapshot", "")))
 
     state = {
-        "schema_version": 1,
+        "schema_version": 2,
         "source": "pubchem",
         "last_collected_at": ts,
-        "last_changed_at": ts if changed else prev.get("last_changed_at", ts),
-        "latest_file": str(latest_file),
-        "latest_checksum": new_checksum,
-        "latest_row_count": new_rows,
-        "history_count": len(history_files),
+        "last_changed_at": ts if overall_changed else prev.get("last_changed_at", ts),
+        "latest_file": latest_file,
+        "latest_checksum": latest_checksum,
+        "latest_row_count": latest_row_count,
+        "history_count": history_counts.get("trials", 0),
         "last_pruned_count": deleted_snapshots,
-        "latest_snapshot": str(snapshot_path) if snapshot_path else prev.get("latest_snapshot", ""),
+        "latest_snapshot": latest_snapshot,
+        "history_counts": history_counts,
+        "changed_assets": changed_assets,
+        "assets": state_assets,
     }
     _write_state(state_file, state)
 
     if args.changed_flag_path:
         flag_path = Path(args.changed_flag_path)
         flag_path.parent.mkdir(parents=True, exist_ok=True)
-        flag_path.write_text("true\n" if changed else "false\n", encoding="utf-8")
+        flag_path.write_text("true\n" if overall_changed else "false\n", encoding="utf-8")
 
-    print(f"changed: {str(changed).lower()}")
+    print(f"changed: {str(overall_changed).lower()}")
     print(f"latest: {latest_file}")
     print(f"state: {state_file}")
-    if snapshot_path:
-        print(f"snapshot: {snapshot_path}")
+    if "trials" in snapshot_paths:
+        print(f"snapshot: {snapshot_paths['trials']}")
+    if "compounds" in snapshot_paths:
+        print(f"snapshot_compounds: {snapshot_paths['compounds']}")
+    if "trials_compact" in snapshot_paths:
+        print(f"snapshot_trials_compact: {snapshot_paths['trials_compact']}")
+    print(f"changed_assets: {','.join(changed_assets) if changed_assets else '-'}")
     print(f"pruned_snapshots: {deleted_snapshots}")
-    print(f"rows: {new_rows}")
-    print(f"checksum: {new_checksum}")
+    print(f"rows: {latest_row_count}")
+    print(f"checksum: {latest_checksum}")
     return 0
 
 

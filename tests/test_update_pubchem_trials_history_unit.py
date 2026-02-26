@@ -178,3 +178,98 @@ def test_update_pubchem_trials_history_retention_prunes_old(tmp_path: Path):
 
     state_obj = json.loads(state.read_text(encoding="utf-8"))
     assert state_obj["last_pruned_count"] == 1
+
+
+def test_update_pubchem_trials_history_with_aux_assets_unit(tmp_path: Path):
+    src = tmp_path / "src"
+    src.mkdir(parents=True, exist_ok=True)
+
+    trials = src / "trials.json"
+    compounds = src / "compounds.json"
+    compact = src / "trials_compact.json"
+
+    trials.write_text('[{"cid":1,"id":"NCT1"}]\n', encoding="utf-8")
+    compounds.write_text('[{"cid":1,"smiles":"C"}]\n', encoding="utf-8")
+    compact.write_text('[{"cid":1,"id":"NCT1"}]\n', encoding="utf-8")
+
+    state = tmp_path / "snapshots" / "collection_state.json"
+    latest_trials = tmp_path / "snapshots" / "latest" / "trials.json"
+    latest_compounds = tmp_path / "snapshots" / "latest" / "compounds.json"
+    latest_compact = tmp_path / "snapshots" / "latest" / "trials_compact.json"
+    history = tmp_path / "snapshots" / "history"
+    flag = tmp_path / "changed.txt"
+
+    r1 = _run(
+        [
+            "--trials-file",
+            str(trials),
+            "--compounds-file",
+            str(compounds),
+            "--trials-compact-file",
+            str(compact),
+            "--state-file",
+            str(state),
+            "--latest-file",
+            str(latest_trials),
+            "--latest-compounds-file",
+            str(latest_compounds),
+            "--latest-trials-compact-file",
+            str(latest_compact),
+            "--history-dir",
+            str(history),
+            "--timestamp",
+            "2026-02-10T00:00:00Z",
+            "--changed-flag-path",
+            str(flag),
+            "--snapshot-on-change",
+        ]
+    )
+    assert r1.returncode == 0, r1.stderr
+    assert "changed: true" in r1.stdout
+    assert flag.read_text(encoding="utf-8").strip() == "true"
+    assert latest_trials.exists()
+    assert latest_compounds.exists()
+    assert latest_compact.exists()
+    assert len(list(history.glob("trials_*.json"))) == 1
+    assert len(list(history.glob("compounds_*.json"))) == 1
+    assert len(list(history.glob("trials_compact_*.json"))) == 1
+
+    compounds.write_text('[{"cid":1,"smiles":"CC"}]\n', encoding="utf-8")
+
+    r2 = _run(
+        [
+            "--trials-file",
+            str(trials),
+            "--compounds-file",
+            str(compounds),
+            "--trials-compact-file",
+            str(compact),
+            "--state-file",
+            str(state),
+            "--latest-file",
+            str(latest_trials),
+            "--latest-compounds-file",
+            str(latest_compounds),
+            "--latest-trials-compact-file",
+            str(latest_compact),
+            "--history-dir",
+            str(history),
+            "--timestamp",
+            "2026-02-10T01:00:00Z",
+            "--changed-flag-path",
+            str(flag),
+            "--snapshot-on-change",
+        ]
+    )
+    assert r2.returncode == 0, r2.stderr
+    assert "changed: true" in r2.stdout
+    assert "changed_assets: compounds" in r2.stdout
+    assert flag.read_text(encoding="utf-8").strip() == "true"
+    assert len(list(history.glob("trials_*.json"))) == 1
+    assert len(list(history.glob("compounds_*.json"))) == 2
+    assert len(list(history.glob("trials_compact_*.json"))) == 1
+
+    state_obj = json.loads(state.read_text(encoding="utf-8"))
+    assert state_obj["schema_version"] == 2
+    assert state_obj["history_counts"]["compounds"] == 2
+    assert state_obj["history_counts"]["trials"] == 1

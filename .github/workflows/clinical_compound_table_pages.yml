@@ -43,6 +43,12 @@ jobs:
           set -euo pipefail
           mkdir -p out/pubchem_trials_dataset_gh
           cp snapshots/clinical_trials/latest/trials.json out/pubchem_trials_dataset_gh/trials.json
+          if [ -f snapshots/clinical_trials/latest/compounds.json ]; then
+            cp snapshots/clinical_trials/latest/compounds.json out/pubchem_trials_dataset_gh/compounds.json
+          fi
+          if [ -f snapshots/clinical_trials/latest/trials_compact.json ]; then
+            cp snapshots/clinical_trials/latest/trials_compact.json out/pubchem_trials_dataset_gh/trials_compact.json
+          fi
 
           python - <<'PY'
           import csv
@@ -51,6 +57,8 @@ jobs:
 
           out_dir = Path("out/pubchem_trials_dataset_gh")
           trials_path = out_dir / "trials.json"
+          compounds_path = out_dir / "compounds.json"
+          compact_path = out_dir / "trials_compact.json"
           rows = json.loads(trials_path.read_text(encoding="utf-8"))
           if not isinstance(rows, list):
               rows = [rows]
@@ -93,12 +101,25 @@ jobs:
               encoding="utf-8",
           )
 
+          n_compounds = 0
+          if compounds_path.exists():
+              compounds = json.loads(compounds_path.read_text(encoding="utf-8"))
+              if isinstance(compounds, list):
+                  n_compounds = len(compounds)
+              elif isinstance(compounds, dict):
+                  n_compounds = 1
+
           summary = {
-              "source": "snapshots/clinical_trials/latest/trials.json",
+              "source_trials": "snapshots/clinical_trials/latest/trials.json",
+              "source_compounds": "snapshots/clinical_trials/latest/compounds.json" if compounds_path.exists() else None,
+              "source_trials_compact": "snapshots/clinical_trials/latest/trials_compact.json" if compact_path.exists() else None,
               "n_rows": len(rows),
               "n_cids": len(cids),
+              "n_compounds": n_compounds,
               "csv": str(out_dir / "trials.csv"),
               "json": str(trials_path),
+              "compounds_json": str(compounds_path) if compounds_path.exists() else None,
+              "trials_compact_json": str(compact_path) if compact_path.exists() else None,
               "cids": str(out_dir / "cids.txt"),
           }
           (out_dir / "summary.json").write_text(
@@ -123,6 +144,12 @@ jobs:
           cp out/pubchem_trials_dataset_gh/index.html site/index.html
           cp out/pubchem_trials_dataset_gh/trials.json site/trials.json
           cp out/pubchem_trials_dataset_gh/trials.csv site/trials.csv
+          if [ -f out/pubchem_trials_dataset_gh/compounds.json ]; then
+            cp out/pubchem_trials_dataset_gh/compounds.json site/compounds.json
+          fi
+          if [ -f out/pubchem_trials_dataset_gh/trials_compact.json ]; then
+            cp out/pubchem_trials_dataset_gh/trials_compact.json site/trials_compact.json
+          fi
           cp out/pubchem_trials_dataset_gh/summary.json site/summary.json
           cp out/pubchem_trials_dataset_gh/cids.txt site/cids.txt
 

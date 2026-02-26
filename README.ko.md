@@ -301,10 +301,14 @@ PYTHONUNBUFFERED=1 conda run -n clinical-pipeline python -u scripts/collect_ctgo
   - `shard_size=500` (기본값, 실행 시간에 맞춰 조정)
   - `image_size=400x400`
 
-PubChem `trials.json` 스냅샷 저장 경로:
+PubChem 스냅샷 저장 경로:
 
 - `snapshots/clinical_trials/latest/trials.json` (최신)
+- `snapshots/clinical_trials/latest/compounds.json` (CID 공통 화합물 캐시)
+- `snapshots/clinical_trials/latest/trials_compact.json` (trial 중심 경량 데이터)
 - `snapshots/clinical_trials/history/trials_*.json` (수집 시각별 히스토리)
+- `snapshots/clinical_trials/history/compounds_*.json` (CID 공통정보 히스토리)
+- `snapshots/clinical_trials/history/trials_compact_*.json` (경량 trial 히스토리)
 - `snapshots/clinical_trials/collection_state.json` (수집/변경 메타데이터, `source: pubchem` 포함)
 
 로컬에서 수집 후 스냅샷 갱신:
@@ -312,8 +316,12 @@ PubChem `trials.json` 스냅샷 저장 경로:
 ```bash
 python scripts/update_pubchem_trials_history.py \
   --trials-file out/pubchem_trials_dataset_check_v2/trials.json \
+  --compounds-file out/pubchem_trials_dataset_check_v2/compounds.json \
+  --trials-compact-file out/pubchem_trials_dataset_check_v2/trials_compact.json \
   --state-file snapshots/clinical_trials/collection_state.json \
   --latest-file snapshots/clinical_trials/latest/trials.json \
+  --latest-compounds-file snapshots/clinical_trials/latest/compounds.json \
+  --latest-trials-compact-file snapshots/clinical_trials/latest/trials_compact.json \
   --history-dir snapshots/clinical_trials/history \
   --retention-days 365
 ```
