@@ -153,7 +153,8 @@ def _trial_key(row: Dict[str, object]) -> str:
 
 
 def _trial_hash(row: Dict[str, object]) -> str:
-    stable = {k: v for k, v in row.items() if k != "image_base64"}
+    # Treat missing optional fields and explicit nulls as equivalent for incremental comparison.
+    stable = {k: v for k, v in row.items() if k != "image_base64" and v is not None}
     payload = json.dumps(stable, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
