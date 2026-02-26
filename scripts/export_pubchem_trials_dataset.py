@@ -9,6 +9,7 @@ import base64
 import csv
 import hashlib
 import json
+import time
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
@@ -117,15 +118,29 @@ def _write_json_array_from_jsonl(jsonl_path: Path, json_path: Path) -> int:
 def _fetch_png_data_uri(cid: int, *, image_size: str = "400x400", timeout: float = 60.0) -> Tuple[Optional[str], Optional[str]]:
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/PNG"
     params = {"image_size": image_size}
+    transient_http_status = {429, 500, 502, 503, 504}
+    retries = 3
 
-    with requests.Session() as s:
-        r = s.get(url, params=params, timeout=timeout)
+    for attempt in range(1, retries + 1):
         try:
-            r.raise_for_status()
-        except requests.HTTPError as e:
-            return None, f"image_http_error:{r.status_code}:{e}"
-        b64 = base64.b64encode(r.content).decode("ascii")
-        return f"data:image/png;base64,{b64}", None
+            with requests.Session() as s:
+                r = s.get(url, params=params, timeout=timeout)
+            try:
+                r.raise_for_status()
+            except requests.HTTPError as e:
+                if r.status_code in transient_http_status and attempt < retries:
+                    time.sleep(0.6 * attempt)
+                    continue
+                return None, f"image_http_error:{r.status_code}:{e}"
+
+            b64 = base64.b64encode(r.content).decode("ascii")
+            return f"data:image/png;base64,{b64}", None
+        except requests.RequestException as e:
+            if attempt < retries:
+                time.sleep(0.6 * attempt)
+                continue
+            return None, f"image_request_error:{type(e).__name__}:{e}"
+    return None, "image_fetch_exhausted"
 
 
 def _dedupe(values: Sequence[int]) -> List[int]:
