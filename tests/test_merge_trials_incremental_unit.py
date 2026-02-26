@@ -75,3 +75,9 @@ def test_merge_trials_incremental_unit(tmp_path: Path):
     assert summary["n_delta_rows"] == 2
     assert summary["n_rows"] == 3
     assert summary["n_cids"] == 3
+    assert summary["n_compounds"] == 3
+
+    compounds = json.loads((out_dir / "compounds.json").read_text(encoding="utf-8"))
+    compact = json.loads((out_dir / "trials_compact.json").read_text(encoding="utf-8"))
+    assert len(compounds) == 3
+    assert len(compact) == 3

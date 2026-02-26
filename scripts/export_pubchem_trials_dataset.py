@@ -17,6 +17,16 @@ import requests
 
 from clinical_data_analyzer.pubchem import PubChemClassificationClient, PubChemClient, PubChemWebFallbackClient
 
+COMPOUND_FIELDS: Sequence[str] = (
+    "cid",
+    "smiles",
+    "inchikey",
+    "iupac_name",
+    "image_base64",
+    "compound_error",
+)
+TRIAL_COMPACT_DROP_FIELDS = {"smiles", "inchikey", "iupac_name", "image_base64", "compound_error"}
+
 
 def _parse_csv_list(value: Optional[str]) -> List[str]:
     if not value:
@@ -109,6 +119,76 @@ def _write_json_array_from_jsonl(jsonl_path: Path, json_path: Path) -> int:
             if not first:
                 out.write(",\n")
             out.write(json.dumps(row, ensure_ascii=False))
+            first = False
+            n += 1
+        out.write("\n]\n")
+    return n
+
+
+def _extract_compounds_from_jsonl(jsonl_path: Path) -> List[Dict[str, object]]:
+    compounds_by_cid: Dict[int, Dict[str, object]] = {}
+    for row in _iter_jsonl(jsonl_path) or []:
+        cid = row.get("cid")
+        if not isinstance(cid, int):
+            continue
+        candidate = {k: row.get(k) for k in COMPOUND_FIELDS}
+        existing = compounds_by_cid.get(cid)
+        if existing is None:
+            compounds_by_cid[cid] = candidate
+            continue
+        for k in COMPOUND_FIELDS:
+            if k == "cid":
+                continue
+            if existing.get(k) is None and candidate.get(k) is not None:
+                existing[k] = candidate.get(k)
+    return [compounds_by_cid[cid] for cid in sorted(compounds_by_cid)]
+
+
+def _write_json_rows(path: Path, rows: Sequence[Dict[str, object]]) -> int:
+    path.write_text(json.dumps(list(rows), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return len(rows)
+
+
+def _write_csv_rows(path: Path, rows: Sequence[Dict[str, object]], header: Sequence[str]) -> int:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(header))
+        w.writeheader()
+        for row in rows:
+            w.writerow({k: row.get(k) for k in header})
+    return len(rows)
+
+
+def _build_compact_header(path: Path, base_first: Sequence[str]) -> List[str]:
+    keys: Set[str] = set()
+    for row in _iter_jsonl(path) or []:
+        keys.update({k for k in row.keys() if k not in TRIAL_COMPACT_DROP_FIELDS})
+    ordered_base = [k for k in base_first if k in keys]
+    rest = sorted([k for k in keys if k not in ordered_base])
+    return ordered_base + rest
+
+
+def _write_compact_csv_from_jsonl(jsonl_path: Path, csv_path: Path, header: Sequence[str]) -> int:
+    n = 0
+    with csv_path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(header))
+        w.writeheader()
+        for row in _iter_jsonl(jsonl_path) or []:
+            compact = {k: v for k, v in row.items() if k not in TRIAL_COMPACT_DROP_FIELDS}
+            w.writerow({k: compact.get(k) for k in header})
+            n += 1
+    return n
+
+
+def _write_compact_json_from_jsonl(jsonl_path: Path, json_path: Path) -> int:
+    n = 0
+    with json_path.open("w", encoding="utf-8") as out:
+        out.write("[\n")
+        first = True
+        for row in _iter_jsonl(jsonl_path) or []:
+            compact = {k: v for k, v in row.items() if k not in TRIAL_COMPACT_DROP_FIELDS}
+            if not first:
+                out.write(",\n")
+            out.write(json.dumps(compact, ensure_ascii=False))
             first = False
             n += 1
         out.write("\n]\n")
@@ -269,6 +349,10 @@ def main() -> int:
     jsonl_path = out_dir / "trials.jsonl"
     csv_path = out_dir / "trials.csv"
     json_path = out_dir / "trials.json"
+    compounds_json_path = out_dir / "compounds.json"
+    compounds_csv_path = out_dir / "compounds.csv"
+    trials_compact_json_path = out_dir / "trials_compact.json"
+    trials_compact_csv_path = out_dir / "trials_compact.csv"
     summary_path = out_dir / "summary.json"
 
     if not args.resume and jsonl_path.exists():
@@ -467,6 +551,28 @@ def main() -> int:
     csv_rows = _write_csv_from_jsonl(jsonl_path, csv_path, header)
     json_rows = _write_json_array_from_jsonl(jsonl_path, json_path)
 
+    compounds_rows = _extract_compounds_from_jsonl(jsonl_path)
+    compounds_json_rows = _write_json_rows(compounds_json_path, compounds_rows)
+    compounds_csv_rows = _write_csv_rows(compounds_csv_path, compounds_rows, COMPOUND_FIELDS)
+
+    compact_preferred_header = [
+        "cid",
+        "collection",
+        "collection_code",
+        "id",
+        "id_url",
+        "title",
+        "phase",
+        "status",
+        "date",
+        "cids",
+        "note",
+        "error",
+    ]
+    compact_header = _build_compact_header(jsonl_path, compact_preferred_header)
+    compact_csv_rows = _write_compact_csv_from_jsonl(jsonl_path, trials_compact_csv_path, compact_header)
+    compact_json_rows = _write_compact_json_from_jsonl(jsonl_path, trials_compact_json_path)
+
     summary = {
         "hnids": hnids,
         "collections": list(collections),
@@ -487,6 +593,15 @@ def main() -> int:
         "json": str(json_path),
         "csv_rows": csv_rows,
         "json_rows": json_rows,
+        "n_compounds": len(compounds_rows),
+        "compounds_json": str(compounds_json_path),
+        "compounds_csv": str(compounds_csv_path),
+        "compounds_json_rows": compounds_json_rows,
+        "compounds_csv_rows": compounds_csv_rows,
+        "trials_compact_json": str(trials_compact_json_path),
+        "trials_compact_csv": str(trials_compact_csv_path),
+        "trials_compact_json_rows": compact_json_rows,
+        "trials_compact_csv_rows": compact_csv_rows,
     }
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -495,6 +610,10 @@ def main() -> int:
     print(f"jsonl: {jsonl_path}")
     print(f"csv: {csv_path}")
     print(f"json: {json_path}")
+    print(f"compounds_json: {compounds_json_path}")
+    print(f"compounds_csv: {compounds_csv_path}")
+    print(f"trials_compact_json: {trials_compact_json_path}")
+    print(f"trials_compact_csv: {trials_compact_csv_path}")
     print(f"summary: {summary_path}")
 
     return 0

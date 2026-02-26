@@ -58,11 +58,15 @@ def test_export_pubchem_trials_dataset_unit(tmp_path: Path):
     jsonl_path = out_dir / "trials.jsonl"
     csv_path = out_dir / "trials.csv"
     json_path = out_dir / "trials.json"
+    compounds_json_path = out_dir / "compounds.json"
+    trials_compact_json_path = out_dir / "trials_compact.json"
     summary_path = out_dir / "summary.json"
 
     assert jsonl_path.exists()
     assert csv_path.exists()
     assert json_path.exists()
+    assert compounds_json_path.exists()
+    assert trials_compact_json_path.exists()
     assert summary_path.exists()
 
     rows = [json.loads(x) for x in jsonl_path.read_text(encoding="utf-8").splitlines() if x.strip()]
@@ -79,10 +83,17 @@ def test_export_pubchem_trials_dataset_unit(tmp_path: Path):
     json_arr = json.loads(json_path.read_text(encoding="utf-8"))
     assert isinstance(json_arr, list)
     assert len(json_arr) == 2
+    compounds_arr = json.loads(compounds_json_path.read_text(encoding="utf-8"))
+    assert len(compounds_arr) == 1
+    assert compounds_arr[0]["cid"] == 119
+    compact_arr = json.loads(trials_compact_json_path.read_text(encoding="utf-8"))
+    assert len(compact_arr) == 2
+    assert "smiles" not in compact_arr[0]
 
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     assert summary["n_cids"] == 1
     assert summary["n_rows"] == 2
+    assert summary["n_compounds"] == 1
 
 
 def test_export_pubchem_trials_dataset_shard_options_unit(tmp_path: Path):

@@ -10,6 +10,16 @@ import json
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Set
 
+COMPOUND_FIELDS: Sequence[str] = (
+    "cid",
+    "smiles",
+    "inchikey",
+    "iupac_name",
+    "image_base64",
+    "compound_error",
+)
+TRIAL_COMPACT_DROP_FIELDS = {"smiles", "inchikey", "iupac_name", "image_base64", "compound_error"}
+
 
 def _load_rows(path: Path) -> List[Dict[str, object]]:
     if not path.exists():
@@ -47,6 +57,29 @@ def _write_csv(path: Path, rows: List[Dict[str, object]], header: Sequence[str])
     return len(rows)
 
 
+def _extract_compounds(rows: Sequence[Dict[str, object]]) -> List[Dict[str, object]]:
+    compounds_by_cid: Dict[int, Dict[str, object]] = {}
+    for row in rows:
+        cid = row.get("cid")
+        if not isinstance(cid, int):
+            continue
+        candidate = {k: row.get(k) for k in COMPOUND_FIELDS}
+        existing = compounds_by_cid.get(cid)
+        if existing is None:
+            compounds_by_cid[cid] = candidate
+            continue
+        for k in COMPOUND_FIELDS:
+            if k == "cid":
+                continue
+            if existing.get(k) is None and candidate.get(k) is not None:
+                existing[k] = candidate.get(k)
+    return [compounds_by_cid[cid] for cid in sorted(compounds_by_cid)]
+
+
+def _compact_rows(rows: Sequence[Dict[str, object]]) -> List[Dict[str, object]]:
+    return [{k: v for k, v in row.items() if k not in TRIAL_COMPACT_DROP_FIELDS} for row in rows]
+
+
 def main() -> int:
     p = argparse.ArgumentParser(prog="merge-trials-incremental")
     p.add_argument("--base-json", required=True, help="Existing full trials.json")
@@ -70,6 +103,10 @@ def main() -> int:
 
     json_path = out_dir / "trials.json"
     csv_path = out_dir / "trials.csv"
+    compounds_json_path = out_dir / "compounds.json"
+    compounds_csv_path = out_dir / "compounds.csv"
+    compact_json_path = out_dir / "trials_compact.json"
+    compact_csv_path = out_dir / "trials_compact.csv"
     cids_path = out_dir / "cids.txt"
     summary_path = out_dir / "summary.json"
 
@@ -94,6 +131,18 @@ def main() -> int:
     header = _build_header(merged_rows, preferred_header)
     csv_rows = _write_csv(csv_path, merged_rows, header)
 
+    compounds_rows = _extract_compounds(merged_rows)
+    compounds_json_path.write_text(json.dumps(compounds_rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    compounds_csv_rows = _write_csv(compounds_csv_path, compounds_rows, COMPOUND_FIELDS)
+
+    compact_rows = _compact_rows(merged_rows)
+    compact_json_path.write_text(json.dumps(compact_rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    compact_header = _build_header(
+        compact_rows,
+        ["cid", "collection", "collection_code", "id", "id_url", "title", "phase", "status", "date", "cids", "note", "error"],
+    )
+    compact_csv_rows = _write_csv(compact_csv_path, compact_rows, compact_header)
+
     cids = sorted({row.get("cid") for row in merged_rows if isinstance(row.get("cid"), int)})
     cids_path.write_text("\n".join(str(x) for x in cids) + ("\n" if cids else ""), encoding="utf-8")
 
@@ -104,10 +153,17 @@ def main() -> int:
         "n_delta_rows": len(delta_rows),
         "n_rows": len(merged_rows),
         "n_cids": len(cids),
+        "n_compounds": len(compounds_rows),
         "json": str(json_path),
         "csv": str(csv_path),
+        "compounds_json": str(compounds_json_path),
+        "compounds_csv": str(compounds_csv_path),
+        "trials_compact_json": str(compact_json_path),
+        "trials_compact_csv": str(compact_csv_path),
         "cids": str(cids_path),
         "csv_rows": csv_rows,
+        "compounds_csv_rows": compounds_csv_rows,
+        "trials_compact_csv_rows": compact_csv_rows,
     }
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -116,6 +172,10 @@ def main() -> int:
     print(f"merged_rows: {len(merged_rows)}")
     print(f"out_json: {json_path}")
     print(f"out_csv: {csv_path}")
+    print(f"compounds_json: {compounds_json_path}")
+    print(f"compounds_csv: {compounds_csv_path}")
+    print(f"trials_compact_json: {compact_json_path}")
+    print(f"trials_compact_csv: {compact_csv_path}")
     print(f"summary: {summary_path}")
     return 0
 
