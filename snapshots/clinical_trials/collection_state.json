@@ -1,18 +1,18 @@
 {
   "schema_version": 2,
   "source": "pubchem",
-  "last_collected_at": "2026-05-27T09:57:04Z",
-  "last_changed_at": "2026-05-27T09:57:04Z",
+  "last_collected_at": "2026-05-28T09:19:36Z",
+  "last_changed_at": "2026-05-28T09:19:36Z",
   "latest_file": "snapshots/clinical_trials/latest/trials.json",
-  "latest_checksum": "b608fbb93077aae3121dbbd9ddc390683cc99410e4f1cca7b3532928c8597620",
-  "latest_row_count": 109493,
-  "history_count": 14,
+  "latest_checksum": "acb59276f3ab659e261f48ee1ba6bb41a7a621053dc50546fdc1edbeff7eb2ac",
+  "latest_row_count": 109599,
+  "history_count": 15,
   "last_pruned_count": 0,
-  "latest_snapshot": "snapshots/clinical_trials/history/trials_20260527T095704Z.json",
+  "latest_snapshot": "snapshots/clinical_trials/history/trials_20260528T091936Z.json",
   "history_counts": {
-    "trials": 14,
-    "compounds": 11,
-    "trials_compact": 12
+    "trials": 15,
+    "compounds": 12,
+    "trials_compact": 13
   },
   "changed_assets": [
     "trials",
@@ -22,21 +22,21 @@
   "assets": {
     "trials": {
       "latest_file": "snapshots/clinical_trials/latest/trials.json",
-      "latest_checksum": "b608fbb93077aae3121dbbd9ddc390683cc99410e4f1cca7b3532928c8597620",
-      "latest_row_count": 109493,
-      "latest_snapshot": "snapshots/clinical_trials/history/trials_20260527T095704Z.json"
+      "latest_checksum": "acb59276f3ab659e261f48ee1ba6bb41a7a621053dc50546fdc1edbeff7eb2ac",
+      "latest_row_count": 109599,
+      "latest_snapshot": "snapshots/clinical_trials/history/trials_20260528T091936Z.json"
     },
     "compounds": {
       "latest_file": "snapshots/clinical_trials/latest/compounds.json",
-      "latest_checksum": "93d8c6b336d952504ffce1bcecaff346195df7bc21b794ca3f59799b01709d6b",
+      "latest_checksum": "53b3c921893969de5e409a8f4eefbb340904f8c0294386bc8b873519e68c4001",
       "latest_row_count": 12358,
-      "latest_snapshot": "snapshots/clinical_trials/history/compounds_20260527T095704Z.json"
+      "latest_snapshot": "snapshots/clinical_trials/history/compounds_20260528T091936Z.json"
     },
     "trials_compact": {
       "latest_file": "snapshots/clinical_trials/latest/trials_compact.json",
-      "latest_checksum": "6b7f901762c9dcab9ac5364a00d88e360cc37609cd4631bebc44d074a2078af3",
-      "latest_row_count": 109493,
-      "latest_snapshot": "snapshots/clinical_trials/history/trials_compact_20260527T095704Z.json"
+      "latest_checksum": "11300b81d7b8f9af790723cd021f34d7160e2e65813fd12fcb661762ad9251f4",
+      "latest_row_count": 109599,
+      "latest_snapshot": "snapshots/clinical_trials/history/trials_compact_20260528T091936Z.json"
     }
   }
 }
